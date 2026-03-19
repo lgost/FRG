@@ -2,38 +2,17 @@ import numpy as np
 from scipy.interpolate import CubicSpline
 from scipy.special import gamma as gammafunction
 import os
+import  my_datacalsses
 
-## flowAC2_twogrids 
-#copied from flowAC1_twogrids 
-#added choice of Ak (coefficient instead of nu_k) (affects only eta_update) #AC2
-
-## flowAC1_twogrids 
-#copied from flowAC_twogrids 
-#eta_upd:  #ComeNotSimpleEta #specified for KS (with coeff_nu, coeff_D in front of regulators, solve only for eta_D, eta_nu is fixed);  #see nlo_kpz_implicit_differentR_eta_update.nb #A
-#added D_dimfull_in
-    
-## flowAC_twogrids 
-#copied from flowA_twogrids 
-#no f(0,0)=1, no simpleEta, order of update  #ComeNotSimpleEta  (like in two4e_justId_om_C1.py and euler1two_C1_0tc_corr_g_eta; things specific to KS, are marked with #A)
-# I tried both with and witout f(0,0)=1 (for g1 - better without; for larger g it doesn't help anyway) #f1
-
-## flowA_twogrids 
-# copied from flowA_regD1. Changes: #two, #twoA - where twogrids implementation has something specific to KS and flowA approach.
-# Inspired by two4e_justId_om_C1.py and euler1two_C1_0tc_corr_g_eta.py
-# Can choose between onegrid and twogrids (just call ini_two after ini in launch) [like in euler1two_C1_0tc_corr_g_eta.py]
-# In RG_Evolution_twogrids, just record IC, there is no RG_evolution_two and calc_I_dimfull.
+## deleting what i copied to flow
 
 global num_powerlaw #two
 num_powerlaw = 5
 
-def ini(Np, p_max, Nw, w_max, q_max, deg_q, degtheta, ds, g_in, eta_D_in, eta_nu_in,
-        f_D_in, f_nu_in, f_lambda_in, r, r_, coeff_nu, #regD
-        dim, path_save, save_spl,
-        version_Ak #AC2 "1" - recommended eta_nu_in=0.5, or "DkoverDLambda" - recommended eta_nu_in=eta_D_in.
-        ):
+def ini():
     global self_path, self_f_D_file, self_f_nu_file, self_par_file, self_save_spl, self_ds
-    global self_p_max, self_Np, self_p, self_w_max, self_Nw, self_w
-    global self_q_max, self_degq, self_q, self_wq, self_theta_max, self_degtheta, self_theta, self_wtheta
+    global self_p, self_w
+    global  self_q, self_wq, self_theta, self_wtheta
     global self_f_D, self_f_nu, self_f_lambda, self_g, self_eta_D, self_eta_nu
     global self_Is_D, self_Is_nu
     global self_f_D_spl, self_f_nu_spl, self_f_lambda_spl, self_f_D_spl_w, self_f_nu_spl_w, self_f_lambda_spl_w
@@ -51,138 +30,17 @@ def ini(Np, p_max, Nw, w_max, q_max, deg_q, degtheta, ds, g_in, eta_D_in, eta_nu
     
     RG_Evolution = RG_Evolution_onegrid
     
-    self_path = path_save 
-    if not os.path.exists(self_path): os.mkdir(self_path) 
-    self_f_D_file = open(self_path + '/f_D.dat', 'w+')
-    self_f_nu_file = open(self_path + '/f_nu.dat', 'w+')
-    self_par_file = open(self_path + '/flow_parameters.dat', 'w+')
-    self_save_spl = save_spl
+    
 
-    self_ds = ds
-    
-    self_version_Ak = version_Ak #AC2
-    
-    # External p - grid (p = |vector_p|)
-    self_p_max = p_max
-    self_Np = Np
-    self_p = np.concatenate([[0.], np.geomspace(1/p_max, p_max, Np-1)])
-    
-    # External w - grid
-    self_w_max = w_max
-    self_Nw = Nw
-    self_w = np.concatenate([[0.], np.geomspace(1/w_max, w_max, Nw-1)])
-    
-    # Internal q - grid (q = |vector_q|)
-    self_q_max = q_max #10
-    self_degq = deg_q #500
-    x, w =  np.polynomial.legendre.leggauss(self_degq)
-    self_q = self_q_max/2 * (1 + x)
-    self_wq = self_q_max/2 * w
-    
-    # Initial conditions
-    self_f_D, self_f_nu, self_f_lambda = f_D_in, f_nu_in, f_lambda_in# = f(p, w)
-    self_g = g_in
-    self_eta_D, self_eta_nu = eta_D_in, eta_nu_in #A
-    print("self_eta_nu =",self_eta_nu)
-    
-    # RG flow part
-    self_Is_D, self_Is_nu = np.zeros((self_Np, self_Nw)), np.zeros((self_Np, self_Nw))
-    
-    # Spline in p
-    self_f_D_spl=[] 
-    self_f_nu_spl=[] 
-    self_f_lambda_spl=[]
-    for iw in range(Nw):
-        self_f_D_spl.append( CubicSpline(self_p, self_f_D[:, iw]) )
-        self_f_nu_spl.append( CubicSpline(self_p, self_f_nu[:, iw]) )
-        self_f_lambda_spl.append( CubicSpline(self_p, self_f_lambda[:, iw]) )
         
-    # Spline in w
-    self_f_D_spl_w=[] 
-    self_f_nu_spl_w=[] 
-    self_f_lambda_spl_w=[]
-    for ip in range(Np):
-        self_f_D_spl_w.append( CubicSpline(self_w, self_f_D[ip, :]) )
-        self_f_nu_spl.append( CubicSpline(self_w, self_f_nu[ip, :]) )
-        self_f_lambda_spl.append( CubicSpline(self_w, self_f_lambda[ip, :]) )
+
+        # NB Is_pfixed = Is_pfixed_dD - for all d, redundant     
     
-    # dim Dimensions
-    self_dim = dim
-    if self_dim > 1:
-        Is_pfixed = Is_pfixed_dD
-        # Internal theta - grid
-        self_theta_max = np.pi
-        self_degtheta = degtheta      
-        x, w =  np.polynomial.legendre.leggauss(self_degtheta)
-        self_theta = self_theta_max/2 * (1 + x)
-        self_wtheta = self_theta_max/2 * w
-    elif self_dim == 1:
-        # self_vdim1=1, self_Jdim1=1, sin=1 - see below
-        Is_pfixed = Is_pfixed_dD
-        self_theta_max = np.pi
-        self_degtheta = 2
-        self_theta = np.array([0, self_theta_max])
-        self_wtheta = np.array([1, 1])
-        print('1D versions are used: theta =',self_theta, 'wtheta =',self_wtheta)
-    else:
-        sys.exit('dim < 1')
-          
-    # Regulator (let it be of same form for D and nu)
-    self_r = r
-    self_r_ = r_
-    # Regulator on self_q grid (frequently used)
-    self_rq = self_r(self_q)
-    self_rq_ = self_r_(self_q)
-    self_coeff_nu = coeff_nu #regD
         
-    self_vdim = np.power(2., 1-self_dim) * np.power(np.pi, -self_dim/2) / gammafunction(self_dim / 2)
-    self_Jdim = self_vdim * np.power(self_q, self_dim - 1) #for intergation over q=|q|.
-    #For intergation over y=q2 it was in WM: self_Jdim = self_vdim / 2 * np.power(self_q, self_dim - 2) #q2^(dim/2-1) ; q array for |q| and functions will be evaluated on (|q|,theta)-grid
+   
 
-    #for GaussLegendre2D :
-    if self_dim == 1:
-        self_vdim1 = 1
-        self_Jdim1 = 1
-        print('1D: self_vdim1 =', self_vdim1, 'self_Jdim1 =', self_Jdim1)
-    else:
-        self_vdim1 = np.power(2., 2-self_dim) * np.power(np.pi, -(self_dim-1)/2) / gammafunction((self_dim-1) / 2)
-        self_Jdim1 = np.power(self_q, self_dim - 1) #only q
+    
 
-    #for calculations :
-    ## Is_pfixed_dD
-    self_w_broad = self_w[np.newaxis,:,np.newaxis,np.newaxis]#p,w,q,t
-
-    self_q_broad = self_q[np.newaxis,np.newaxis,:,np.newaxis]
-    self_q_broad2 = self_q_broad**2 
-    
-    self_rq_broad = self_r(self_q_broad)
-    self_rq__broad = self_r_(self_q_broad)
-    
-    if self_dim == 1:
-        self_sin_d2_broad = 1
-        print('1D: self_sin_d2_broad =', self_sin_d2_broad)
-    else:
-        self_sin_d2_broad = np.sin(self_theta)**(self_dim-2)
-        self_sin_d2_broad = self_sin_d2_broad[np.newaxis,np.newaxis,np.newaxis,:]#p,w,q,t
-    
-    self_p_broad = self_p[:,np.newaxis,np.newaxis,np.newaxis]#p,w,q,t
-    self_p_broad2 = self_p_broad**2
-    
-    self_pqcos_broad = self_p_broad * self_q_broad * np.cos(self_theta[np.newaxis,np.newaxis,np.newaxis,:])
-    self_Q_broad2 = self_q_broad2 + self_p_broad2 + 2 * self_pqcos_broad
-    self_Q_broad  = np.sqrt(self_Q_broad2)
-    
-    self_rQ_broad = self_r(self_Q_broad)
-    
-    ## eta_update_NLO #ComeNotSimpleEta
-    self_q2 = self_q**2
-    self_qd1 = self_q**(self_dim+1)
-    self_qd3 = self_qd1 * self_q2
-    self_qd5 = self_qd3 * self_q2
-    
-    ## spline
-    self_p_max_plus_q = self_p_max + self_q
-    self_p_max_plus_q_div_p_max = self_p_max_plus_q / self_p_max
 
 def ini_two(*twoparams): #two
     global RG_Evolution
