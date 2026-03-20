@@ -1,32 +1,9 @@
-import numpy as np
-from scipy.interpolate import CubicSpline
-from scipy.special import gamma as gammafunction
-import os
-import  my_datacalsses
-
-## deleting what i copied to flow
-
-global num_powerlaw #two
-num_powerlaw = 5
+## deleting what I copied to flow
 
 def ini():
-    global self_path, self_f_D_file, self_f_nu_file, self_par_file, self_save_spl, self_ds
-    global self_p, self_w
-    global  self_q, self_wq, self_theta, self_wtheta
-    global self_f_D, self_f_nu, self_f_lambda, self_g, self_eta_D, self_eta_nu
-    global self_Is_D, self_Is_nu
-    global self_f_D_spl, self_f_nu_spl, self_f_lambda_spl, self_f_D_spl_w, self_f_nu_spl_w, self_f_lambda_spl_w
-    global self_r, self_r_, self_rq, self_rq_, self_coeff_nu #regD
-    global self_dim, self_vdim, self_Jdim, self_vdim1, self_Jdim1
-    global Is_pfixed, Is_pfixed_dD#Functions are added to the current namespace like any other name would be added. That means you can use the global keyword inside a function or method
-    global self_w_broad, self_q_broad, self_q_broad2,  self_q2, self_qd1, self_qd3, self_qd5
-    #self_cos_theta_broad, self_sin_theta_broad,
-    global self_p_broad, self_p_broad2, self_sin_d2_broad, self_pqcos_broad
-    global self_Q_broad, self_Q_broad2, self_rQ_broad, self_rq_broad, self_rq__broad
-    global self_p_max_plus_q, self_p_max_plus_q_div_p_max
+ 
     global RG_Evolution
-    global self_q2,self_qd1,self_qd3,self_qd5   #ComeNotSimpleEta
-    global self_version_Ak #AC2
+
     
     RG_Evolution = RG_Evolution_onegrid
     
@@ -105,32 +82,9 @@ def ini_two(*twoparams): #two
 ##########################################################################
 # Methods
 ##########################################################################
-    
-# spline in modulus p :
-def spline(f):
-    spl = [None] * self_Nw  # Preallocate list for better performance
-    p_max_plus_q = self_p_max_plus_q
-    p_max_plus_q_div_p_max = self_p_max_plus_q_div_p_max
-    
-    for iw in range(self_Nw):
-        f_m = f[-1, iw]
-        f_m_ = np.gradient(f[-5:, iw], self_p[-5:])[-1]
-        b = self_p_max * f_m_ / f_m
-        f_right = f_m * (p_max_plus_q_div_p_max) ** b
-        
-        combined_p = np.concatenate([self_p, p_max_plus_q])
-        combined_f = np.concatenate([f[:, iw], f_right])
 
-        spl[iw] = CubicSpline(combined_p, combined_f)
-    
-    return spl
 
-# spline in w : 
-def spline_w(f):
-    spl = []
-    for ip in range(self_Np):
-        spl.append( CubicSpline(self_w, f[ip, :]) )
-    return spl
+
     
 def power_law_w_avg_loggrid(f, ip, num): #two
     f_m = f[ip, -num:]
@@ -155,14 +109,7 @@ def f_spline_update():
     self_f_nu_spl_w = spline_w(self_f_nu)
     self_f_lambda_spl_w = spline_w(self_f_lambda)
 
-def GaussLegendre2D_NLO(gq, Fpwqt):#gq depends on q, Fpwqt depends on p,w,q,theta
-    Fq = np.einsum('pwqt,t->pwq', Fpwqt, self_wtheta) 
-    gq_weihgt = self_wq*gq
-    Ipw = np.einsum('pwq,q->pw', Fq, gq_weihgt)
-    return Ipw
 
-def GaussLegendre(yq):
-    return np.sum(self_wq * yq)
 
 def eta_update(): #ComeNotSimpleEta #specified for KS (with coeff_nu, coeff_D in front of regulators, solve only for eta_D, eta_nu is fixed); 
     #see nlo_kpz_implicit_differentR_eta_update.nb #A
@@ -195,10 +142,7 @@ def eta_update(): #ComeNotSimpleEta #specified for KS (with coeff_nu, coeff_D in
     if self_version_Ak == "DkoverDLambda": #AC2
         self_eta_nu = self_eta_D
 
-def g_update(): #regD
-    global self_g
-    g = self_g - self_ds * self_g  * (self_dim - 2 - self_eta_D + 3 * self_eta_nu )
-    self_g = g
+
 
 def dimfull_update():  #twoA
     global self_D_dimfull, self_Anu_dimfull
@@ -206,116 +150,11 @@ def dimfull_update():  #twoA
     self_D_dimfull -= self_ds * (- self_eta_D  * self_D_dimfull) 
     self_Anu_dimfull -= self_ds * (- self_eta_nu * self_Anu_dimfull) #self_eta_nu does not change, self_Anu_dimfull_ini = 1, Anu=Anu_Lambda*K^(-eta_nu_*)   
 
-def Is_pfixed_dD(): # works with whole p grid
-    #(Np, Nw,  degq, degtheta)
-    p2 =self_p_broad2
-    w = self_w_broad
-    q = self_q_broad      
-    q2 = self_q_broad2
-
-    sin_d2 = self_sin_d2_broad
-    pqcos = self_pqcos_broad
-    
-    Q = self_Q_broad 
-    Q2 = self_Q_broad2 
-    
-    coeff_D = 1
-    coeff_nu = self_coeff_nu
-    rDQ = self_rQ_broad * coeff_D
-    rDq = self_rq_broad * coeff_D
-    rDq_ = self_rq__broad * coeff_D
-    rnuQ = self_rQ_broad * coeff_nu
-    rnuq = self_rq_broad * coeff_nu
-    rnuq_ = self_rq__broad * coeff_nu
-    
-    kq = self_f_D_spl[0](q) + rDq
-    lq = q2 * (self_f_nu_spl[0](q) + rnuq)
-    kQ = self_f_D_spl[0](Q) + rDQ 
-    lQ = Q2 * (self_f_nu_spl[0](Q) + rnuQ)  
-    
-    if np.any(lq<0):#debug
-        print('I: lq<0 at', np.where(lq<0))
-    if np.any(lQ<0):#debug
-        print('I: lQ<0 at', np.where(lQ<0))
-    
-    dsR_D  = - self_eta_D  * rDq - 2 * q2 * rDq_
-    dsR_nu = - self_eta_nu * rnuq - 2 * q2 * rnuq_
-
-    f_lambdaq = self_f_lambda_spl[0](q) 
-    f_lambdaQ = self_f_lambda_spl[0](Q) 
-#     f_lambda_p = np.broadcast_to(self_f_lambda[:,0], (self_Nw, self_Np)).transpose() #f(p,w=0)
-    f_lambda_p = (self_f_lambda[:,0])[:, np.newaxis]
-    
-    fl = f_lambdaq*lQ + f_lambdaQ*lq
-
-    wff2 = (w * f_lambdaq * f_lambdaQ)**2
-    denom_a = 2*lq*lQ*( fl**2 + wff2 )
-    A3a = (fl) / denom_a
-
-    denom_c = denom_a**2 * lq / lQ
-    fl2 = fl + f_lambdaQ*lq
-    A3c = ( fl**2 * fl2 + wff2 * f_lambdaq*lQ ) / denom_c
-
-    gq = self_Jdim1
-    
-    Fqtw = sin_d2 * (q2+pqcos)**2 * kQ * (A3a*dsR_D - A3c*dsR_nu * 2*q2*lq*kq) 
-    I_D = 2 * self_g * f_lambda_p**2 * self_vdim1 / (2*np.pi) * GaussLegendre2D_NLO(gq, Fqtw)
-    
-    denom_d = denom_c * f_lambdaq / lq**2
-    A3d = (fl**2 * lQ + (w*f_lambdaQ)**2 * fl2 * f_lambdaq) / denom_d #kloss2012_omega_integration.nb
-
-    #if ip != 0:
-    Fqtw = sin_d2 * (q2+pqcos) * ( -pqcos*f_lambdaQ*lQ*A3a*dsR_D + (2*pqcos*f_lambdaQ*lQ*lq*kq*A3c + (p2 + pqcos)*f_lambdaq*kQ*(f_lambdaq**2*A3d - lq**2*A3c))*q2*dsR_nu )
-    I_nu = - 2 * self_g * f_lambda_p * self_vdim1 / (2*np.pi) * GaussLegendre2D_NLO(gq, Fqtw) #/ (p**2) outside
-    
-    return I_D, I_nu #todo I_lambda
 
 
-def Is_update():#whole p
-    global self_Is_D, self_Is_nu
-    self_Is_D, self_Is_nu = Is_pfixed()
-    self_Is_nu[1:self_Np, :] /= self_p[1:self_Np, np.newaxis]**2
-    self_Is_nu[0, :] = self_Is_nu[1, :] 
 
-def f_update():
-    global self_f_D, self_f_nu
-    
-    ## flow_D
-    splines = self_f_D_spl
-    splines_w = self_f_D_spl_w
-    
-    pder = np.array([spl.derivative()(self_p) for spl in splines]) #shape (Nw,Np)
-    pder = self_p[np.newaxis, :] * pder
-    
-    wder = np.array([spl.derivative()(self_w) for spl in splines_w]) #shape (Np,Nw)
-    wder = self_w[np.newaxis, :] * wder
-    
-    dim_flow_D  = self_eta_D  * self_f_D  + pder.T + (2 - self_eta_nu) * wder
-    
-    ## flow_nu
-    splines = self_f_nu_spl
-    splines_w = self_f_nu_spl_w
-    
-    pder = np.array([spl.derivative()(self_p) for spl in splines])
-    pder = self_p[np.newaxis, :] * pder
-    
-    wder = np.array([spl.derivative()(self_w) for spl in splines_w])
-    wder = self_w[np.newaxis, :] * wder 
 
-    dim_flow_nu = self_eta_nu * self_f_nu + pder.T + (2 - self_eta_nu) * wder
-    
-    ## f update
-    self_f_D  -= self_ds * (self_Is_D  + dim_flow_D)
-    self_f_nu -= self_ds * (self_Is_nu + dim_flow_nu)
-    #todo: f_lambda
-    # self_f_D[0,0] = 1 #ComeNotSimpleEta #f1
-    # self_f_nu[0,0] = 1 #A
-    
-def close_files():
-    global self_par_file, self_f_D_file, self_f_nu_file
-    self_par_file.close()
-    self_f_D_file.close()
-    self_f_nu_file.close()
+
     
 def close_files_two():#two
     global self_exit_par_file
@@ -334,12 +173,7 @@ def write_files_params(s): #regD_fD1
     np.savetxt(self_par_file, param, delimiter = ' ', newline = ' ')
     self_par_file.write('\n')
 
-def write_files_f(s): #regD_fD1
-    global self_f_D_file, self_f_nu_file
-    np.savetxt(self_f_D_file, self_f_D, delimiter = ' ', newline = ' ')
-    np.savetxt(self_f_nu_file, self_f_nu, delimiter = ' ', newline = ' ')
-    self_f_D_file.write('\n')
-    self_f_nu_file.write('\n')
+
 
 def record_IC_two(s): #two 
     global self_G20_IC_two
