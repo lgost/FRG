@@ -99,18 +99,6 @@ def powerlaw_w_update(): #two
     self_powerlaw_w_f_D  = power_law_w_avg_loggrid(self_f_D,  ipe, num_powerlaw)
     self_powerlaw_w_f_nu = power_law_w_avg_loggrid(self_f_nu, ipe, num_powerlaw)
 
-def f_spline_update():
-    global  self_f_D_spl,self_f_nu_spl,self_f_lambda_spl, self_f_D_spl_w,self_f_nu_spl_w,self_f_lambda_spl_w
-    self_f_D_spl = spline(self_f_D)
-    self_f_nu_spl = spline(self_f_nu)
-    self_f_lambda_spl = spline(self_f_lambda)
-
-    self_f_D_spl_w = spline_w(self_f_D)  #spline_w
-    self_f_nu_spl_w = spline_w(self_f_nu)
-    self_f_lambda_spl_w = spline_w(self_f_lambda)
-
-
-
 def eta_update(): #ComeNotSimpleEta #specified for KS (with coeff_nu, coeff_D in front of regulators, solve only for eta_D, eta_nu is fixed); 
     #see nlo_kpz_implicit_differentR_eta_update.nb #A
     global self_eta_D , self_eta_nu
