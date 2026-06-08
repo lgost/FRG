@@ -26,18 +26,33 @@ class FlowNLO:
 		In "NLO", functions of external moments and frequency are calculated,
 		in "LO" the frequency array is set to [0].
 	dim : int
-		dimension >=1
+		space dimension >=1
 	version_Ak : str
-		"1" or "DkoverDLambda" # TODO implement
-	...
-
-	Methods
-	-------
-	m(m=m)
-		ms
+		"1" or "DkoverDLambda" - defines adimensionalisation of f_nu. # TODO implement
+	f_D, f_nu, f_lambda : ndarray
+		flowing functions (f_lambda is constant in this version) of momentum p and frequency w,
+		2d-arrays of (Np,Nw) shape.
+	g: float
+		flowing dimensionless coupling oe effective nonlinearity.
+	eta_D, eta_nu : float
+		flowing anomalous dimensions of D and nu.
+	p : ndarray
+		external momentum grid, 1-dimensional array.
+	Np : int
+		number of points in p.
+	Nw : int
+		number of points in w.
+	w : ndarray
+		external momentum grid, 1-dimensional array.
+	q : ndarray
+		interanl momentum grid for integration over momentum.
+	theta : ndarray
+		angle grid for integration over momentum in arbitrary dimx.
+	r, r_ :
+		the regulator and its derivative (callable)
+	rq, rq_ : ndarray
+		the regulator and its derivative evaluated on the q-grid
 	"""
-
-	num_powerlaw = 5 # number of points to calculate power law of f's, shared by all instances
 
 	def __init__(self,
 				approximation : str,
