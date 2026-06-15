@@ -48,8 +48,10 @@ class Evolution:
                 sys.exit(-1)
         else:
             os.mkdir(self.path)
-        self.f_file = open(self.path + '/f.dat', 'w+')
-        self.par_file = open(self.path + '/flow_parameters.dat', 'w+')
+
+        # binary data.tofile is faster and lighter than np.savetxt
+        self.f_file = open(self.path + '/f.bin', 'wb+')
+        self.par_file = open(self.path + '/flow_parameters.bin', 'wb+')
 
 
 ##########################################################################
@@ -71,10 +73,10 @@ class Evolution:
             "".join(f"\t{x:.5f}" for x in -self.integral[:, 0, 0])
         )
 
-    def write_files_params(self, s):
-        param = np.concatenate([[s], eta, [g]])
+    def write_files_params(self, s):#TODO s to self?
+        param = np.concatenate([[s], self.eta, [self.g]])
         np.savetxt(self.par_file, param, delimiter=' ', newline=' ')
-        self.par_file.write('\n')
+        param.tofile(self.par_file)
 
     def close_files(self):
         self.par_file.close()
