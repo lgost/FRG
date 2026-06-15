@@ -5,7 +5,7 @@ import numpy as np
 from scipy.special import gamma as gammafunction
 import os
 
-import my_dataclasses
+from flow import my_dataclasses
 import splines
 
 # from dataclasses import dataclass
@@ -55,16 +55,16 @@ class FlowNLO:
 	"""
 
 	def __init__(self,
-				approximation : str,
-				dim : int,
-				version_Ak : str,
-				params_grid_external: my_dataclasses.Params_grid_external,
-				params_grid_internal: my_dataclasses.Params_grid_internal,
-				ds : float,
-				IC: my_dataclasses.IC_NLO,
-				r, r_, #coeff_nu : float,
-				path_save: str, save_spl : bool
-				):
+	             approximation : str,
+	             dim : int,
+	             version_Ak : str,
+	             params_grid_external: my_dataclasses.Params_grid_external,
+	             params_grid_internal: my_dataclasses.Params_grid_internal,
+	             ds : float,
+	             IC: my_dataclasses.IC_NLO,
+	             r, r_,  #coeff_nu : float,
+	             path_save: str, save_spl : bool
+	             ):
 
 		# Essentials: approximmation type and dimesion
 		self.approximation = approximation
@@ -278,12 +278,12 @@ class FlowNLO:
 # Methods : calculation routines
 ##########################################################################
 
-	def spline(self, f:my_dataclasses.F_NLO): # TODO experiment outside function with f etc args with jit, or jit here
+	def spline(self, f: my_dataclasses.F_NLO): # TODO experiment outside function with f etc args with jit, or jit here
 		"""Calculates splines in p for each w."""
 
 		return splines.splines_pplusq(f, self.Nw, self.p, self.p_max_plus_q, self.p_max_plus_q_div_p_max)
 
-	def spline_w(self, f:my_dataclasses.F_NLO):
+	def spline_w(self, f: my_dataclasses.F_NLO):
 		"""Calculates splines in w for each p."""
 
 		return splines.splines(f, self.Nw, self.p)

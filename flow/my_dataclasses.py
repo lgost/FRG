@@ -17,19 +17,19 @@ class Params_grid_internal:
 	q_max: float = 10
 	deg_theta: int = 10
 	theta_max: float = np.pi
-	
-@dataclass
-class F_NLO:
-	f: int = 40
-	q_max: float = 10
-	deg_theta: int = 10
-	theta_max: float = np.pi
+#
+# @dataclass
+# class F_NLO:
+# 	f: int = 40
+# 	q_max: float = 10
+# 	deg_theta: int = 10
+# 	theta_max: float = np.pi
 	
 @dataclass
 class IC_NLO:
 	g_in: float
 	
-	eta_D_in: float 
+	etas: float
 	eta_nu_in: float 
 	
 	f_D_in : np.ndarray
