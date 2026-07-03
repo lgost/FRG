@@ -5,7 +5,7 @@ import numpy as np
 from scipy.special import gamma as gammafunction
 import os
 
-from flow import my_dataclasses
+from flow import flow_dataclasses
 import splines
 
 # from dataclasses import dataclass

@@ -1,5 +1,5 @@
 import numpy as np
-from flow import my_dataclasses
+from flow import flow_dataclasses
 from scipy.interpolate import CubicSpline, RectBivariateSpline
 
 # @ 
