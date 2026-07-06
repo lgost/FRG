@@ -22,5 +22,5 @@ class Params_grid_internal:
 @dataclass
 class IC_NLO:
 	g_in: float
-	etas_in: float
+	etas_in: np.ndarray
 	fs_in : np.ndarray

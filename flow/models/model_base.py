@@ -46,13 +46,13 @@ class ModelBase(ABC):
         self.version_Ak = version_Ak
 
         if self.approximation == "NLO":
-            self.f_spline_update = self.f_spline_update_NLO
-            self.Is_pfixed = self.Is_pfixed_dD_NLO  # Is.Is_pfixed_dD_NLO(...,1,1) # TODO
-            self.f_update = self.f_update_NLO
+            # self.f_spline_calc = self.f_spline_calc_NLO
+            self.Integral_pfixed = self.Integral_pfixed_dD_NLO  # Is.Is_pfixed_dD_NLO(...,1,1) # TODO
+            self.f_rhs_calc = self.f_rhs_calc_NLO
         elif approximation == "LO":
-            self.f_spline_update = self.f_spline_update_LO
-            self.Is_pfixed = self.Is_pfixed_dD_LO
-            self.f_update = self.f_update_LO
+            # self.f_spline_calc = self.f_spline_calc_LO
+            self.Integral_pfixed = self.Integral_pfixed_dD_LO
+            self.f_rhs_calc = self.f_rhs_calc_LO
         else:
             sys.exit('Wrong approximation')
 
@@ -64,7 +64,7 @@ class ModelBase(ABC):
         self._init_regulator(r, r_, coeff_nu)
 
         # Define quantities used in the calculations
-        self._init_other()
+        self._init_calc()
 
         # Print the init parameters
         self.print_init()
@@ -156,27 +156,14 @@ class ModelBase(ABC):
         self.r_ = r_
         self.coeff_nu = coeff_nu
 
-    def _init_other(self):
+    def _init_calc(self):
         """Initializes auxiliary values, frequently used in calculations."""
 
-        # Regulator evaluated on self.q grid (frequently used)
+        ## Regulator evaluated on self.q grid (frequently used)
         self.rq = self.r(self.q)
         self.rq_ = self.r_(self.q)
 
-        # # Splines in p
-        # self.f_D_spl=[]
-        # self.f_nu_spl=[]
-        # self.f_lambda_spl=[]
-        # if self.approximation == "NLO":
-        # 	# Splines in w
-        # 	self.f_D_spl_w=[]
-        # 	self.f_nu_spl_w=[]
-        # 	self.f_lambda_spl_w=[]
-
-        self.Is_D = np.zeros(self.external_grid_shape)
-        self.Is_nu = np.zeros(self.external_grid_shape)  # (self.Np, self.Nw)
-
-        ## For Is calculation
+        ## For Integrals calculation
         self.w_broad = self.w[np.newaxis, :, np.newaxis, np.newaxis]  # p,w,q,t
 
         self.q_broad = self.q[np.newaxis, np.newaxis, :, np.newaxis]
@@ -201,7 +188,7 @@ class ModelBase(ABC):
 
         self.rQ_broad = self.r(self.Q_broad)
 
-        ## For eta_update_NLO #ComeNotSimpleEta
+        ## For eta_calc_NLO #ComeNotSimpleEta
         self.q2 = self.q ** 2
         self.qd1 = self.q ** (self.dim + 1)
         self.qd3 = self.qd1 * self.q2
@@ -223,50 +210,34 @@ class ModelBase(ABC):
         print("==================================================")
 
 ##########################################################################
-# Methods : updates
+# Methods : calc
 ##########################################################################
 
     @abstractmethod
-    def f_spline_update_LO(self):
-        """Updates splines of f's in p."""
-
-    @abstractmethod
-    def f_spline_update_NLO(self):
-        """Updates splines of f's in p and w."""
-
-    @abstractmethod
-    def Is_pfixed_dD_LO(self):
+    def Integral_pfixed_dD_LO(self, g, eta, f):
         """Calculates Integrals in the rhs of dsf in LO. Works with whole p grid."""
 
     @abstractmethod
-    def Is_pfixed_dD_NLO(self):
+    def Integral_pfixed_dD_NLO(self, g, eta, f):
         """Calculates Integrals in the rhs of dsf in NLO. Works with whole p grid."""
 
     @abstractmethod
-    def f_update_LO(self):
-        """Updates f's in LO."""
+    def f_rhs_calc_LO(self, g, eta, f):
+        """Calculates r.h.s. of f's in LO."""
 
     @abstractmethod
-    def f_update_NLO(self):
-        """Updates f's in NLO."""
+    def f_rhs_calc_NLO(self, g, eta, f):
+        """Calculates r.h.s. of f's in NLO."""
 
     @abstractmethod
-    def eta_update(self):# TODO experiment outside function with f etc args with jit, or jit here
-        """Updates eta's in LO/NLO."""
+    def eta_calc(self, eta):# TODO experiment outside function with f etc args with jit, or jit here
+        """Calculates new eta's in LO/NLO."""
 
     @abstractmethod
-    def g_update(self):
-        """Updates g (minus because ds>0, but we go to back in RG time s)."""
+    def g_rhs_calc(self, g, eta):
+        """Calculates r.h.s. of g (to be used as g-=r.h.s.*ds,
+        minus because ds>0, but we must go to back in RG time s)."""
 
     @abstractmethod
-    def Is_update(self):
-        """Updates  self.Is_D and self.Is_nu """
-
-    def step_update(self):
-        """One step in RG time. Order of updates: #NotSimpleEta"""
-
-        self.f_spline_update()
-        self.Is_update()
-        self.eta_update()
-        self.g_update()
-        self.f_update()
+    def Integral_calc(self, g, eta, f):
+        """Calculates  integrals in the r.h.s. of f's flows. """

@@ -30,8 +30,14 @@ class Evolution:
         # self.ds = float(parameters.get("ds"))
         self.ds = ds
         self.s = 0
-        self._init_IC(IC) # self.state = self._init_IC(IC)
+        self._init_IC(IC)
         self._init_save(path_save)
+        self._init_calc()
+        self._check_consistency()
+
+##########################################################################
+# Methods : init
+##########################################################################
 
     def _init_IC(self, IC: flow_dataclasses.IC_NLO):
         """Initializes initial conditions for LO/NLO flow."""
@@ -60,9 +66,44 @@ class Evolution:
         # Print the init parameters
         self.print_init()
 
+    def _init_calc(self):
+        """Initializes auxiliary values, frequently used in calculations."""
+
+        self.Integral = np.zeros((self.model.n_f, *self.model.external_grid_shape))
+
+        if self.model.approximation == "NLO":
+            self.f_spl = [] # Splines in p
+            self.f_spline_calc = self.f_spline_calc_NLO
+        elif self.model.approximation == "LO":
+            self.f_spl_w = []  # Splines in w
+            self.f_spline_calc = self.f_spline_calc_LO
+
+    def _check_consistency(self):
+        """ Checks consistency of shapes of the flow parameters."""
+        # if self.model.n_f == 1:
+        #     f_sh = self.model.external_grid_shape
+        #     eta_sh = (self.model.n_f,)
+        # else:
+        #     f_sh = (self.model.n_f, * self.model.external_grid_shape)
+        #     eta_sh = (self.model.n_f,)
+
+        f_sh = (self.model.n_f, *self.model.external_grid_shape)
+        eta_sh = (self.model.n_f,)
+
+        check_f = ( self.f.shape ==  f_sh)
+        check_eta = ( self.eta.shape == eta_sh )
+
+        if  check_f and check_eta:
+            print('Shapes are consistent')
+        else:
+            print('Shapes are not consistent: check_f =', check_f, 'check_eta', check_eta)
+            print(self.f.shape, f_sh )
+            print(self.eta.shape, eta_sh )
+            sys.exit('Shapes  are not consistent')
 ##########################################################################
 # Methods : print, save
 ##########################################################################
+
     def print_heading(self):
         print('s \t eta\'s \t\t  g \t -I\'s[0,0]')
 
@@ -75,7 +116,7 @@ class Evolution:
             " | " +
             '\t{:.3f}'.format(self.g) +
             " | " +
-            "".join(f"\t{x:.5f}" for x in -self.integral[:, 0, 0])
+            "".join(f"\t{x:.5f}" for x in -self.Integral[:, 0, 0])
     )
 
     def write_files_params(self):
@@ -101,6 +142,23 @@ class Evolution:
     # Methods : RG evolution
     ##########################################################################
 
+    def f_spline_calc_LO(self):
+        """Calculates splines of f's in p."""
+        return 0
+
+    def f_spline_calc_NLO(self):
+        """Calculates splines of f's in p and w."""
+        return 0
+
+    def step_update(self):
+        """One step in RG time. Order of updates: #NotSimpleEta"""
+
+        self.f_spl = self.f_spline_calc()
+        self.Integral = self.model.Integral_calc(self.g, self.eta, self.f)
+        self.eta = self.model.eta_calc(self.g, self.eta, self.f)
+        self.g -= self.ds * self.model.g_rhs_calc(self.g, self.eta)
+        self.f -= self.ds * self.model.f_rhs_calc(self.g, self.eta, self.f)
+
     def rg_evolution(self, s_fin: REAL, n_print: int, n_save_params: int, n_save_f: int):
         """Integration of the flow equations with simple Euler step.
 
@@ -122,9 +180,8 @@ class Evolution:
         self.s = 0
         n = 0
 
-
         while self.s > s_fin:
-            self.model.step_update()
+            self.step_update()
 
             if n % n_print == 0:
                 self.print_line()

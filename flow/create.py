@@ -8,7 +8,7 @@ from .models import ModelBase, ModelToy
 # from wrappers... TODO better name
 
 
-MODELS : dict[str, ModelBase] = {
+MODELS : dict[str, type[ModelBase]] = {
     "Toy": ModelToy,
 }
 
@@ -30,9 +30,13 @@ def create(
     Parameters
     ----------
     model_name:str
-        "Toy", "KPZ", "KS", "NS_thermal"
+        Physical model. Accepts "Toy", "KPZ", "KS", "NS_thermal"
     evolution_name:str
-        "evo1", "evo2"
+        One grid or two grids scheme. Accepts "evo1", "evo2"
+    ds:REAL
+        Step in RG time.
+    path_save:str
+        Relative path to save the output.
 
     Returns
     -------
