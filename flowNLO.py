@@ -5,7 +5,6 @@ import numpy as np
 from scipy.special import gamma as gammafunction
 import os
 
-from flow import flow_dataclasses
 import splines
 
 # from dataclasses import dataclass
@@ -277,16 +276,16 @@ class FlowNLO:
 ##########################################################################
 # Methods : calculation routines
 ##########################################################################
+	#
+	# def spline(self, f: my_dataclasses.F_NLO): # TODO experiment outside function with f etc args with jit, or jit here
+	# 	"""Calculates splines in p for each w."""
+	#
+	# 	return splines.splines_pplusq(f, self.Nw, self.p, self.p_max_plus_q, self.p_max_plus_q_div_p_max)
 
-	def spline(self, f: my_dataclasses.F_NLO): # TODO experiment outside function with f etc args with jit, or jit here
-		"""Calculates splines in p for each w."""
-
-		return splines.splines_pplusq(f, self.Nw, self.p, self.p_max_plus_q, self.p_max_plus_q_div_p_max)
-
-	def spline_w(self, f: my_dataclasses.F_NLO):
-		"""Calculates splines in w for each p."""
-
-		return splines.splines(f, self.Nw, self.p)
+	# def spline_w(self, f: my_dataclasses.F_NLO):
+	# 	"""Calculates splines in w for each p."""
+	#
+	# 	return splines.splines(f, self.Nw, self.p)
 
 
 	def GaussLegendre(self, yq : np.ndarray):
@@ -381,21 +380,21 @@ class FlowNLO:
 		self.g -= self.ds * self.g * (self.dim - 2 - self.eta_D + 3 * self.eta_nu)
 
 
-	def f_spline_update_LO(self):
-		"""Updates splines of f's in p"""
+	# def f_spline_update_LO(self):
+	# 	"""Updates splines of f's in p"""
+	#
+	# 	self.f_D_spl = self.spline(self.f_D)
+	# 	self.f_nu_spl = self.spline(self.f_nu)
+	# 	self.f_lambda_spl = self.spline(self.f_lambda)
 
-		self.f_D_spl = self.spline(self.f_D)
-		self.f_nu_spl = self.spline(self.f_nu)
-		self.f_lambda_spl = self.spline(self.f_lambda)
-
-	def f_spline_update_NLO(self):
-		"""Updates splines of f's in p and w"""
-
-		self.f_spline_update_LO()
-
-		self.f_D_spl_w = self.spline_w(self.f_D)
-		self.f_nu_spl_w = self.spline_w(self.f_nu)
-		self.f_lambda_spl_w = self.spline_w(self.f_lambda)
+	# def f_spline_update_NLO(self):
+	# 	"""Updates splines of f's in p and w"""
+	#
+	# 	self.f_spline_update_LO()
+	#
+	# 	self.f_D_spl_w = self.spline_w(self.f_D)
+	# 	self.f_nu_spl_w = self.spline_w(self.f_nu)
+	# 	self.f_lambda_spl_w = self.spline_w(self.f_lambda)
 
 
 	def Is_pfixed_dD_LO(self, coeff_D : float, coeff_nu : float):

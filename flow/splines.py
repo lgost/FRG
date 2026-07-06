@@ -1,10 +1,10 @@
 import numpy as np
-from flow import flow_dataclasses
 from scipy.interpolate import CubicSpline, RectBivariateSpline
 
-# @ 
-def splines_pplusq(f: my_dataclasses.F_NLO, Nw:int, p:np.ndarray,
-                   p_max_plus_q:np.ndarray, p_max_plus_q_div_p_max:np.ndarray):
+#todo numba
+def splines_pplusq(f:np.ndarray, Nw:int, p:np.ndarray,
+                   p_max_plus_q:np.ndarray,
+				   p_max_plus_q_div_p_max:np.ndarray):
 	"""Calculate splines of f as a function of p on p-grid extended by q-grid.  
 	
 	Parameters
@@ -42,7 +42,7 @@ def splines_pplusq(f: my_dataclasses.F_NLO, Nw:int, p:np.ndarray,
 	return spl
 
 
-def splines(f : my_dataclasses.F_NLO, Np : int, w : np.ndarray, ):
+def splines(f: np.ndarray, Np: int, w: np.ndarray, ):
 	"""Calculate splines of f as a function of w.
 	
 	Parameters

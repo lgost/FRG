@@ -21,8 +21,9 @@ def create(
         model_name:str,
         model_params,
         evolution_name:str,
-        IC:flow_dataclasses.IC_NLO,
-        ds:REAL, path_save:str
+        # IC:flow_dataclasses.IC_NLO,
+        # ds:REAL, path_save:str,
+        evolution_params
 ):
     """
     Sets up a given evolution (evolution_name) for a
@@ -49,7 +50,7 @@ def create(
 
     model_class = MODELS[model_name]
     model = model_class(*model_params)
-    evo = Evolution(model, IC, ds, path_save)
+    evo = Evolution(model, *evolution_params)#IC, ds, path_save)
 
     if evolution_name == 'evo1':
         return evo

@@ -7,25 +7,22 @@ class ModelToy(ModelBase):
                  n_f: int,
                  approximation: str,
                  dim: int,
-                 version_Ak: str,
-                 params_grid_external: flow_dataclasses.Params_grid_external,
-                 params_grid_internal: flow_dataclasses.Params_grid_internal,
-                 r, r_, coeff_nu : REAL):
+                 version_Ak: str
+                 ):
 
         super().__init__(n_f,
                  approximation,
                  dim,
-                 version_Ak,
-                 params_grid_external,
-                 params_grid_internal,
-                 r, r_, coeff_nu)
+                 version_Ak)
 
         # if self.n_f == 1:
         #     self.toy_f_rhs = np.zeros(self.external_grid_shape)
         # else:
         #     self.toy_f_rhs = np.zeros((self.n_f, *self.external_grid_shape))
 
-        self.toy_f_rhs = np.zeros((self.n_f, *self.external_grid_shape))
+        # self.toy_f_rhs = np.zeros((self.n_f, *self.external_grid_shape))
+        self.toy_f_rhs = np.zeros((self.n_f, 30,1))
+
 
     ##########################################################################
     # Methods : calc
@@ -43,7 +40,7 @@ class ModelToy(ModelBase):
     def f_rhs_calc_NLO(self, g, eta, f):
         return self.toy_f_rhs
 
-    def eta_calc(self, g, eta, f):
+    def eta_calc(self, g, eta, q, fq):
         return  np.zeros(self.n_f)
 
     def g_rhs_calc(self, g, eta):
