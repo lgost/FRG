@@ -14,27 +14,26 @@ class ModelBase(ABC):
 		in "LO" the frequency array is set to [0].
 	dim : int
 		space dimension >=1
-	version_Ak : str
-		"1" or "DkoverDLambda" - defines adimensionalisation of f_nu. # TODO implement
+	# version_Ak : str
+	# 	"1" or "DkoverDLambda" - defines adimensionalisation of f_nu. # TODO implement
    ...TODO
     """
 
     n_f: int
     approximation: str
     dim: int
-    version_Ak: str  # todo
 
     def __init__(self,
                  n_f: int,
                  approximation: str,
                  dim: int,
-                 version_Ak: str
+                 **kwargs # version_Ak: str # todo
                  ):
         # Essentials: number of flowing functions (f's), approximation type and dimension
         self.n_f = n_f
         self.approximation = approximation
         self.dim = dim
-        self.version_Ak = version_Ak
+        # self.version_Ak = version_Ak
 
         if self.approximation == "NLO":
             self.Integral_pfixed = self.Integral_pfixed_dD_NLO  # Is.Is_pfixed_dD_NLO(...,1,1) # TODO

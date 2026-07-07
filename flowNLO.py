@@ -287,33 +287,6 @@ class FlowNLO:
 	#
 	# 	return splines.splines(f, self.Nw, self.p)
 
-
-	def GaussLegendre(self, yq : np.ndarray):
-		"""Calculates integral of yq with the Gauss-Legendre method. """
-
-		return np.sum(self.wq * yq)
-
-	def GaussLegendre2D_NLO(self, gq : np.ndarray, Fpwqt : np.ndarray):
-		"""Calculates integral of Fpwqt*gq with the Gauss-Legendre method.
-
-		Parameters
-		----------
-		gq : np.ndarray
-			a function of q on q-grid.
-		Fpwqt : np.ndarray
-			a function of p,w,q,theta on p,w,q,theta-grids.
-
-		Returns
-		-------
-		Ipw
-			integral over q and theta (a function of p and w)
-		"""
-
-		Fq = np.einsum('pwqt,t->pwq', Fpwqt, self.wtheta)
-		gq_weight = self.wq*gq
-		Ipw = np.einsum('pwq,q->pw', Fq, gq_weight)
-		return Ipw
-
 ##########################################################################
 # Methods : updates
 ##########################################################################
@@ -378,23 +351,6 @@ class FlowNLO:
 		"""Updates g (minus because ds>0, but we go to back in RG time s)."""
 
 		self.g -= self.ds * self.g * (self.dim - 2 - self.eta_D + 3 * self.eta_nu)
-
-
-	# def f_spline_update_LO(self):
-	# 	"""Updates splines of f's in p"""
-	#
-	# 	self.f_D_spl = self.spline(self.f_D)
-	# 	self.f_nu_spl = self.spline(self.f_nu)
-	# 	self.f_lambda_spl = self.spline(self.f_lambda)
-
-	# def f_spline_update_NLO(self):
-	# 	"""Updates splines of f's in p and w"""
-	#
-	# 	self.f_spline_update_LO()
-	#
-	# 	self.f_D_spl_w = self.spline_w(self.f_D)
-	# 	self.f_nu_spl_w = self.spline_w(self.f_nu)
-	# 	self.f_lambda_spl_w = self.spline_w(self.f_lambda)
 
 
 	def Is_pfixed_dD_LO(self, coeff_D : float, coeff_nu : float):

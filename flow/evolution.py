@@ -288,6 +288,7 @@ class Evolution:
 
             #Calculate f's at w=0 on q-grid
             self.fq[i,:] = self.f_spl[i,0](self.q)
+            # self.fQ[i, :] = self.f_spl[i, 0](self.Q_broad)
 
     def f_spline_upd_NLO(self):
         """Updates splines of f's in p and w
@@ -315,8 +316,7 @@ class Evolution:
         # self.calc_upd()
         self.Integral = self.model.Integral_calc(self.g, self.eta, self.f)
         self.eta = self.model.eta_calc(
-            self.g, self.eta,
-            self.q, self.fq
+            self.g, self.eta, self.wq, self.fq
             )
         self.g -= self.ds * self.model.g_rhs_calc(self.g, self.eta)
         self.f -= self.ds * self.model.f_rhs_calc(self.g, self.eta, self.f)
