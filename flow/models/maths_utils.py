@@ -19,7 +19,8 @@ def GaussLegendre(wq: np.ndarray, yq: np.ndarray):
     return np.sum(wq * yq)
 
 
-def GaussLegendre2D_NLO(self, gq: np.ndarray, Fpwqt: np.ndarray):
+def GaussLegendre2D_NLO(wq: np.ndarray, wtheta: np.ndarray,
+                        gq: np.ndarray, Fpwqt: np.ndarray):
     """Calculates integral of Fpwqt*gq with the Gauss-Legendre method.
 
     Parameters
@@ -35,7 +36,7 @@ def GaussLegendre2D_NLO(self, gq: np.ndarray, Fpwqt: np.ndarray):
         integral over q and theta (a function of p and w)
     """
 
-    Fq = np.einsum('pwqt,t->pwq', Fpwqt, self.wtheta)
-    gq_weight = self.wq * gq
-    Ipw = np.einsum('pwq,q->pw', Fq, gq_weight)
+    Fpwq = np.einsum('pwqt,t->pwq', Fpwqt, wtheta)
+    gq_weight = wq * gq
+    Ipw = np.einsum('pwq,q->pw', Fpwq, gq_weight)
     return Ipw

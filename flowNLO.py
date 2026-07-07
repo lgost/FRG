@@ -5,7 +5,6 @@ import numpy as np
 from scipy.special import gamma as gammafunction
 import os
 
-import splines
 
 # from dataclasses import dataclass
 # from numba import jit, njit, float64, int32
@@ -567,94 +566,15 @@ class FlowNLO:
 # Methods : print, save
 ##########################################################################
 
-	def print_heading(self):
-		print('s \t eta_D \t eta_nu \t g \t -ID[0,0] \t -Inu[0,0]')
-
-	def print_line(self, s : float):
-		""" Prints flowing parameters at RG time s."""
-
-		print('\t{:.3f}'.format(s) +
-			  '\t{:.5f}'.format(self.eta_D) +
-			  '\t{:.5f}'.format(self.eta_nu) +
-			  '\t{:.3f}'.format(self.g) +
-			  '\t{:.5f}'.format(-self.Is_D[0,0]) +
-			  '\t{:.5f}'.format(-self.Is_nu[0,0]) )
-
-	def save_splines(self):
-		np.save(self.path + '/f_D_spl.npy', self.f_D_spl)
-		np.save(self.path + '/f_nu_spl.npy', self.f_nu_spl)
-		if self.approximation == "NLO":
-			np.save(self.path + '/f_D_spl_w.npy', self.f_D_spl_w)
-			np.save(self.path + '/f_nu_spl_w.npy', self.f_nu_spl_w)
-
-	def write_files_params(self, s):
-		param = np.array([s, self.eta_D, self.eta_nu, self.g])
-		np.savetxt(self.par_file, param, delimiter = ' ', newline = ' ')
-		self.par_file.write('\n')
-
-	def write_files_f(self):
-		np.savetxt(self.f_D_file, self.f_D, delimiter = ' ', newline = ' ')
-		np.savetxt(self.f_nu_file, self.f_nu, delimiter = ' ', newline = ' ')
-		self.f_D_file.write('\n')
-		self.f_nu_file.write('\n')
-
-	def close_files(self):
-		self.par_file.close()
-		self.f_D_file.close()
-		self.f_nu_file.close()
 ##########################################################################
 # Methods : RG evolution
 ##########################################################################
 
-	def Euler_step_update(self):
-		"""One step in RG time. Order of updates: #NotSimpleEta"""
-
-		self.f_spline_update()
-		self.Is_update()
-		self.eta_update()
-		self.g_update()
-		self.f_update()
-
-
-	def RG_Evolution(self, s_fin : float, n_print : int, n_save_params : int, n_save_f : int):
-		"""Integration of the flow equations with simple Euler step.
-
-		Parameters
-		----------
-		s_fin : float
-			negative final RG time, until which we integrate the flow (e.g., -20).
-		n_print : int
-			each n_print steps print the flow parameters.
-		n_save_params : int
-			each n_save_params steps write the flow parameters to file.
-		n_save_f : int
-			each n_save_f steps write the functions f_D, f_nu to file.
-		"""
-
-		print('START RG_Evolution')
-		self.print_heading()
-
-		s = 0
-		n = 0
-
-		while s > s_fin:
-			self.Euler_step_update()
-
-			if n % n_print == 0:
-				self.print_line(s)
-
-			if n % n_save_params == 0: #LO
-				self.write_files_params(s)
-			if n % n_save_f == 0: #LO
-				self.write_files_f()
-
-			n += 1
-			s -= self.ds
-
-		self.close_files()
-
-		if self.save_spl == True:
-			self.f_spline_update()
-			self.save_splines()
-
-		print('FINISH Saved in', self.path)
+	# def Euler_step_update(self):
+	# 	"""One step in RG time. Order of updates: #NotSimpleEta"""
+	#
+	# 	self.f_spline_update()
+	# 	self.Is_update()
+	# 	self.eta_update()
+	# 	self.g_update()
+	# 	self.f_update()
