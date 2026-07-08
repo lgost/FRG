@@ -4,27 +4,26 @@ from flow_dataclasses import *
 from .evolution import *
 from .models import ModelBase, ModelToy
 
-# from evolution2 import * TODO
-# from wrappers... TODO better name
+from .evolution_two import EvolutionTwoBase, Evo2Toy
+
 
 
 MODELS : dict[str, type[ModelBase]] = {
     "Toy": ModelToy,
 }
 
-# EVO2_WRAPPERS: dict[str, type(Evolution2)] = { #TODO
-#     "Toy": ModelToyEvo2,
-# }
+EVO_TWO: dict[str, type[EvolutionTwoBase]] = {
+    "Toy": Evo2Toy,
+}
 
 
 def create(
         model_name:str,
         model_params,
         evolution_name:str,
-        # IC:flow_dataclasses.IC_NLO,
-        # ds:REAL, path_save:str,
-        evolution_params
-):
+        evolution_params,
+        evolution_two_params = None
+) -> Evolution | EvolutionTwoBase:
     """
     Sets up a given evolution (evolution_name) for a
     given model (model_name).
@@ -55,8 +54,9 @@ def create(
     if evolution_name == 'evo1':
         return evo
     elif evolution_name == 'evo2':
-        #TODO
-        pass
+        evo2_class = EVO_TWO[model_name]
+        evo2 = evo2_class(evo,*evolution_two_params)
+        return evo2
     else:
         raise ValueError(f"Evolution {evolution_name} not supported")
     

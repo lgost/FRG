@@ -65,7 +65,7 @@ class ModelBase(ABC):
         self._init_calc()
 
         # Print the init parameters
-        self.print_init()
+        self.print_class_vars()
 
     ##########################################################################
     # Methods : init
@@ -210,7 +210,7 @@ class ModelBase(ABC):
         self.fq = np.zeros((self.n_f, self.degq))
         self.fQ = np.zeros((self.n_f, *self.Q_broad.shape))
 
-    def print_init(self):
+    def print_class_vars(self):
         print("=== Model is initialized with the following parameters: ===")
         for key, value in vars(self).items():
             if isinstance(value, np.ndarray):

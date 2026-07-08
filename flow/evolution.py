@@ -30,7 +30,7 @@ class Evolution:
         self._init_save(path_save)
 
         # Print the init parameters
-        self.print_init()
+        self.print_class_vars()
 
     ##########################################################################
     # Methods : init
@@ -108,7 +108,7 @@ class Evolution:
         self.par_file.close()
         self.f_file.close()
 
-    def print_init(self):
+    def print_class_vars(self):
         print("=== Evolution is initialized with the following parameters: ===")
         for key, value in vars(self).items():
             # if key in ('model', 'ds', 'g', 'eta', 'path',
@@ -163,7 +163,7 @@ class Evolution:
             each n_save_f steps write the functions f_D, f_nu to file.
         """
 
-        print('START RG_Evolution')
+        print('START rg_evolution')
         self.print_heading()
 
         self.s = 0
