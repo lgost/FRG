@@ -32,12 +32,18 @@ class ModelToy(ModelBase):
 
     def Integral_pfixed_dD_LO(self, g, eta):
         I = np.zeros((self.n_f, *self.external_grid_shape))#todo move grids and calc_other back to model
-        gq = self.q ** 2 #ok
-        # gq = np.ones_like(self.q) #ok
+
+        # gq = self.q ** 2 #ok 1D
+        # gq = np.ones_like(self.q) #ok 1D
+
+        gq = self.q ** 2 #2D
+        gq *= self.Jdim1 * self.vdim1 #Kloss 2012
+        gq *= (2*np.pi)**self.dim / (2*np.pi) #without 1/(2pi)**d
+
         for i in range(self.n_f):
-            Fpwqt = self.fQ[i]
+            Fpwqt = self.fQ[i] * self.sin_d2_broad #Kloss 2012
             I[i,:,:] = GaussLegendre2D_NLO(self.wq, self.wtheta, gq, Fpwqt)
-            for j in [50, 60, 90]:
+            for j in [50, 60, 90, -1]:
                 print('p=', self.p[j], f'I[{i}](p, w=0)=',I[i,j,0])
         return I
 
@@ -67,6 +73,6 @@ class ModelToy(ModelBase):
     def calc_upd(self):
         for i in range(self.n_f):
             ##Calculate f's at w=0 on q-grid and Q-grid:
-            self.fq[i, :] = self.f_spl[i, 0](self.q)
-            self.fQ[i, :] = self.f_spl[i, 0](self.Q_broad)
+            self.fq[i] = self.f_spl[i, 0](self.q)
+            self.fQ[i] = self.f_spl[i, 0](self.Q_broad)
         print('calc_upd done')

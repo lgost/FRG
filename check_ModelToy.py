@@ -12,7 +12,7 @@ print("sys._is_gil_enabled() =", sys._is_gil_enabled())
 # n_f=1
 n_f=2
 approximation = "LO"
-dim=1
+dim=2
 
 path_save = 'check'
 
@@ -149,5 +149,4 @@ plt.show()
 
 
 ### check integrals GaussLegendre_2D_NLO (print p and I(p) in ModelToy) ###
-# p= 0.9999999999999994 I[1](p, w=0)= 144.00000000000043
-# p= 42.91934260128774 I[1](p, w=0)= 29601.120101424924
+# OK

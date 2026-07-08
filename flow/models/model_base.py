@@ -111,6 +111,7 @@ class ModelBase(ABC):
         self.q_max = par.q_max
         self.degq = par.deg_q
         x, w = np.polynomial.legendre.leggauss(self.degq)
+        sinx, w = np.polynomial.legendre.leggauss(self.degq)
         self.q = self.q_max / 2 * (1 + x)
         self.wq = self.q_max / 2 * w
 
@@ -128,8 +129,8 @@ class ModelBase(ABC):
 
             # Jacobian
             self.vdim1 = np.power(2., 2 - self.dim) * np.power(np.pi, -(self.dim - 1) / 2) / gammafunction(
-                (self.dim - 1) / 2)
-            self.Jdim1 = np.power(self.q, self.dim - 1)  # only q
+                (self.dim - 1) / 2) #v_(d-1) in Kloss2012
+            self.Jdim1 = np.power(self.q, self.dim - 1)  # Kloss2012 (A2)
 
         elif self.dim == 1:
             # Internal theta-grid is trivial
@@ -187,7 +188,7 @@ class ModelBase(ABC):
             self.sin_d2_broad = 1
             print('1D: self.sin_d2_broad =', self.sin_d2_broad)
         else:
-            self.sin_d2_broad = np.sin(self.theta) ** (self.dim - 2)
+            self.sin_d2_broad = np.sin(self.theta) ** (self.dim - 2) # Kloss2012 (A2)
             self.sin_d2_broad = self.sin_d2_broad[np.newaxis, np.newaxis, np.newaxis, :]  # p,w,q,t
 
         self.p_broad = self.p[:, np.newaxis, np.newaxis, np.newaxis]  # p,w,q,t
