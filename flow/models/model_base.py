@@ -51,12 +51,9 @@ class ModelBase(ABC):
         else:
             sys.exit('Wrong approximation')
 
-
-
         # Set up an internal (integration) grid and external grids
         self._init_grid_external(params_grid_external)
         self._init_grid_internal(params_grid_internal)
-
 
         # Choose the regulator
         self._init_regulator(r, r_, coeff_nu)
@@ -73,7 +70,8 @@ class ModelBase(ABC):
 
     def _init_grid_external(self, par : flow_dataclasses.Params_grid_external):
         """Sets up the external p-grid (p = |vector_p|)
-        and, in NLO, the external logarithmic frequency grid (w>0, f's are Real)
+        and, in NLO, the external frequency grid (w>0, f's are Real);
+        only log-scale grids are supported.
         """
 
         self.p_min = par.p_min
@@ -115,19 +113,19 @@ class ModelBase(ABC):
         self.q = self.q_max / 2 * (1 + x)
         self.wq = self.q_max / 2 * w
 
-        # Jacobian
+        ## Jacobian
         self.vdim = np.power(2., 1 - self.dim) * np.power(np.pi, -self.dim / 2) / gammafunction(self.dim / 2)
         self.Jdim = self.vdim * np.power(self.q, self.dim - 1)  # for intergation over q=|q|.
 
         if self.dim > 1:
-            # Internal theta-grid
+            ## Internal theta-grid
             self.theta_max = par.theta_max
             self.degtheta = par.deg_theta
             x, w = np.polynomial.legendre.leggauss(self.degtheta)
             self.theta = self.theta_max / 2 * (1 + x)
             self.wtheta = self.theta_max / 2 * w
 
-            # Jacobian
+            ## Jacobian
             self.vdim1 = np.power(2., 2 - self.dim) * np.power(np.pi, -(self.dim - 1) / 2) / gammafunction(
                 (self.dim - 1) / 2) #v_(d-1) in Kloss2012
             self.Jdim1 = np.power(self.q, self.dim - 1)  # Kloss2012 (A2)
@@ -140,7 +138,7 @@ class ModelBase(ABC):
             self.wtheta = np.array([1, 1])
             print('1D versions are used: theta =', self.theta, 'wtheta =', self.wtheta)
 
-            # Jacobian
+            ## Jacobian
             self.vdim1 = 1
             self.Jdim1 = 1
             print('1D: vdim1 =', self.vdim1, 'Jdim1 =', self.Jdim1)
@@ -160,10 +158,12 @@ class ModelBase(ABC):
 
         self.Integral = np.zeros((self.n_f, *self.external_grid_shape))
 
-        self.f_spl = np.zeros((self.n_f, self.Nw), dtype=object)  # Splines in p
+        ## Splines in p
+        self.f_spl = np.zeros((self.n_f, self.Nw), dtype=object)
         if self.approximation == "LO":
             self.f_spline_upd = self.f_spline_upd_LO
         elif self.approximation == "NLO":
+            ## Splines in w
             self.f_spl_w = np.zeros((self.n_f, self.Np), dtype=object) #Splines in w
             self.f_spline_upd = self.f_spline_upd_NLO
 
@@ -176,7 +176,8 @@ class ModelBase(ABC):
         self.rq_ = self.r_(self.q)
 
         ## For Integrals calculation
-        self.w_broad = self.w[np.newaxis, :, np.newaxis, np.newaxis]  # p,w,q,t
+        ## Shape: p,w,q,t
+        self.w_broad = self.w[np.newaxis, :, np.newaxis, np.newaxis]
 
         self.q_broad = self.q[np.newaxis, np.newaxis, :, np.newaxis]
         self.q_broad2 = self.q_broad ** 2
@@ -188,8 +189,9 @@ class ModelBase(ABC):
             self.sin_d2_broad = 1
             print('1D: self.sin_d2_broad =', self.sin_d2_broad)
         else:
-            self.sin_d2_broad = np.sin(self.theta) ** (self.dim - 2) # Kloss2012 (A2)
-            self.sin_d2_broad = self.sin_d2_broad[np.newaxis, np.newaxis, np.newaxis, :]  # p,w,q,t
+            ## Kloss2012 (A2)
+            self.sin_d2_broad = np.sin(self.theta) ** (self.dim - 2)
+            self.sin_d2_broad = self.sin_d2_broad[np.newaxis, np.newaxis, np.newaxis, :]
 
         self.p_broad = self.p[:, np.newaxis, np.newaxis, np.newaxis]  # p,w,q,t
         self.p_broad2 = self.p_broad ** 2
@@ -206,9 +208,13 @@ class ModelBase(ABC):
         self.qd3 = self.qd1 * self.q2
         self.qd5 = self.qd3 * self.q2
 
-        #f's at w=0 on q-grid and Q-grid:
+        ## f's at w=0 on q-grid and Q-grid:
         self.fq = np.zeros((self.n_f, self.degq))
         self.fQ = np.zeros((self.n_f, *self.Q_broad.shape))
+
+        ## f's derivative at w=0 on q-grid:
+        self.fq_ = np.zeros((self.n_f, self.degq))
+
 
     def print_class_vars(self):
         print("=== Model is has the following parameters: ===")

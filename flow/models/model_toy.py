@@ -31,7 +31,7 @@ class ModelToy(ModelBase):
     ##########################################################################
 
     def Integral_pfixed_dD_LO(self, g, eta):
-        I = np.zeros((self.n_f, *self.external_grid_shape))#todo move grids and calc_other back to model
+        I = np.zeros((self.n_f, *self.external_grid_shape))
 
         # gq = self.q ** 2 #ok 1D
         # gq = np.ones_like(self.q) #ok 1D

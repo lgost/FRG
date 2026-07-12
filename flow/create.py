@@ -2,7 +2,7 @@ from flow_types import REAL
 from flow_dataclasses import *
 
 from .evolution import *
-from .models import ModelBase, ModelToy
+from .models import ModelBase, ModelToy, ModelKPZ
 
 from .evolution_two import EvolutionTwoBase, Evo2Toy
 
@@ -10,6 +10,7 @@ from .evolution_two import EvolutionTwoBase, Evo2Toy
 
 MODELS : dict[str, type[ModelBase]] = {
     "Toy": ModelToy,
+    "KPZ": ModelKPZ,
 }
 
 EVO_TWO: dict[str, type[EvolutionTwoBase]] = {
