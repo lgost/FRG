@@ -20,7 +20,7 @@ class ModelBase(ABC):
 		space dimension >=1
 	# version_Ak : str
 	# 	"1" or "DkoverDLambda" - defines adimensionalisation of f_nu. # TODO implement
-   ...TODO
+   ...TODO docs
     """
 
     n_f: int
@@ -43,7 +43,7 @@ class ModelBase(ABC):
         # self.version_Ak = version_Ak
 
         if self.approximation == "NLO":
-            self.Integral_pfixed = self.Integral_pfixed_dD_NLO  # Is.Is_pfixed_dD_NLO(...,1,1) # TODO
+            self.Integral_pfixed = self.Integral_pfixed_dD_NLO
             self.f_rhs_calc = self.f_rhs_calc_NLO
         elif approximation == "LO":
             self.Integral_pfixed = self.Integral_pfixed_dD_LO
@@ -211,17 +211,25 @@ class ModelBase(ABC):
         self.fQ = np.zeros((self.n_f, *self.Q_broad.shape))
 
     def print_class_vars(self):
-        print("=== Model is initialized with the following parameters: ===")
+        print("=== Model is has the following parameters: ===")
+        excluded = [
+            "fq", "fQ", "q2", "qd1", "qd3", "qd5",
+            "r", "r_", "p_max_plus_q", "p_max_plus_q_div_p_max",
+            "w_broad", "q_broad", "q_broad2", "rq_broad", "rq__broad",
+            "sin_d2_broad", "p_broad", "p_broad2", "pqcos_broad",
+            "Q_broad2", "Q_broad", "rQ_broad"
+        ]
         for key, value in vars(self).items():
-            if isinstance(value, np.ndarray):
-                if value.size > 3:
-                    # preview = np.array2string(value.flat[:3], separator=", ")
-                    preview = f"{value.flat[0]}, {value.flat[1]}, ..., {value.flat[-1]}"
-                    print(f"{key}=ndarray(shape={value.shape}: {preview})")
+            if key not in excluded:
+                if isinstance(value, np.ndarray):
+                    if value.size > 3:
+                        # preview = np.array2string(value.flat[:3], separator=", ")
+                        preview = f"{value.flat[0]}, {value.flat[1]}, ..., {value.flat[-1]}"
+                        print(f"{key}=ndarray(shape={value.shape}: {preview})")
+                    else:
+                        print(f"{key}={value}")
                 else:
                     print(f"{key}={value}")
-            else:
-                print(f"{key}={value}")
         print("==================================================")
 
 ##########################################################################
@@ -264,7 +272,7 @@ class ModelBase(ABC):
         """Calculates r.h.s. of f's in NLO."""
 
     @abstractmethod
-    def eta_calc(self, g, eta):# TODO experiment outside function with f etc args with jit, or jit here
+    def eta_calc(self, g, eta):
         """Calculates new eta's in LO/NLO."""
 
     @abstractmethod

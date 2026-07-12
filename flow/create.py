@@ -55,7 +55,7 @@ def create(
         return evo
     elif evolution_name == 'evo2':
         evo2_class = EVO_TWO[model_name]
-        evo2 = evo2_class(evo,*evolution_two_params)
+        evo2 = evo2_class(evo,**evolution_two_params)
         return evo2
     else:
         raise ValueError(f"Evolution {evolution_name} not supported")

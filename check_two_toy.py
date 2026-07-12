@@ -45,13 +45,22 @@ Np_two = 3
 p_min_two, p_max_two = 1, p_exit
 Nw_two, w_min_two, w_max_two = Np_two, p_min_two**2 , p_exit**2 * 10#**(3)
 scale = 'log'
-evo_two_params = Np_two, p_min_two, p_max_two, \
-    enslave_w_to_p_two, Nw_two, w_min_two, w_max_two, \
-    p_exit, X_dimful_in, scale
+
+evo_two_params = dict(
+    X_dimful_in = X_dimful_in,
+    enslave_w_to_p_two = enslave_w_to_p_two,
+    p_exit = p_exit,
+    Np_two = Np_two,
+    p_min_two = p_min_two, p_max_two = p_max_two,
+    Nw_two = Nw_two,
+    w_min_two = w_min_two, w_max_two = w_max_two,
+    scale = scale,
+    s_fin_all_exited = False
+)
 
 flow = create.create('Toy', model_params,'evo2', evo_params, evo_two_params)
 
-s_fin= -1.40974598-1*ds
+s_fin= -ds #-1.40974598-1*ds
 n_print=1
 n_save_params=1
 n_save_f=1

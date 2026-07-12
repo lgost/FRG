@@ -109,7 +109,7 @@ class Evolution:
         self.f_file.close()
 
     def print_class_vars(self):
-        print("=== Evolution is initialized with the following parameters: ===")
+        print("=== Evolution has the following parameters: ===")
         for key, value in vars(self).items():
             # if key in ('model', 'ds', 'g', 'eta', 'path',
             #            'n_f', 'approximation', 'dim', 'version_Ak',

@@ -9,28 +9,32 @@ from ..evolution import Evolution
 class EvolutionTwoBase(ABC):
     def __init__(self,
                  evo: Evolution,
-                 # params_two: dict[str, Any]#todo
-                 *params_two
+                 **params_two
                  ):
         self.evo = evo
         self.s = self.evo.s
         self.ds = self.evo.ds
         self.path = self.evo.path
 
-        # self.Np_two, self.p_min_two, self.p_max_two, \
-        # self.enslave_w_to_p_two, self.Nw_two, self.w_min_two, self.w_max_two,\
-        # self.p_exit, self.X_dimful_in = params_two
-        Np_two, p_min_two, p_max_two, \
-        enslave_w_to_p_two, Nw_two, w_min_two, w_max_two,\
-        p_exit, X_dimful_in, scale = params_two
+        Np_two = params_two.get('Np_two')
+        p_min_two = params_two.get('p_min_two')
+        p_max_two = params_two.get('p_max_two')
+        match_w_to_p_two = params_two.get('match_w_to_p_two')
+        Nw_two = params_two.get('Nw_two')
+        w_min_two = params_two.get('w_min_two')
+        w_max_two = params_two.get('w_max_two')
+        p_exit = params_two.get('p_exit')
+        X_dimful_in = params_two.get('X_dimful_in')
+        scale = params_two.get('scale', 'log')
+        s_fin_all_exited = params_two.get('s_fin_all_exited', False)
 
         ## 1) Initialize the second (p,w)-grid
         self._init_second_grid(Np_two, p_min_two, p_max_two,
-                               enslave_w_to_p_two, Nw_two, w_min_two, w_max_two,
+                               match_w_to_p_two, Nw_two, w_min_two, w_max_two,
                                scale)
 
         ## 2) Initialize p-criterion of exit
-        self._init_exit(p_exit)
+        self._init_exit(p_exit, s_fin_all_exited)
 
         ## 3) Prepare arrays to record the correlation function
         self._init_arrays(self.grid_two_shape)
@@ -46,16 +50,13 @@ class EvolutionTwoBase(ABC):
         self._init_save(self.path)
 
         # Print the init parameters
-        self.print_init()
-
-        self.js_exit = self.s_exit.size - 1
-        self.all_exited = False
+        self.print_class_vars()
 
     ##########################################################################
     # Methods : init
     ##########################################################################
     def _init_second_grid(self, Np_two, p_min_two, p_max_two,
-                          enslave_w_to_p_two, Nw_two, w_min_two, w_max_two,
+                          match_w_to_p_two, Nw_two, w_min_two, w_max_two,
                           scale='log'):
         self.p_min_two = p_min_two
         self.p_max_two = p_max_two
@@ -66,7 +67,7 @@ class EvolutionTwoBase(ABC):
             self.p_two = np.linspace(p_min_two, p_max_two, Np_two)
         else:
             raise ValueError(f"Scale {scale} not supported")
-        if enslave_w_to_p_two:
+        if match_w_to_p_two:
             if scale == 'lin':
                 raise Warning("Linear scale is broken for w_two")
             self.w_min_two = self.p_min_two ** 2
@@ -84,14 +85,19 @@ class EvolutionTwoBase(ABC):
 
         self.grid_two_shape = (self.Np_two, self.Nw_two)
 
-    def _init_exit(self, p_exit):
+    def _init_exit(self, p_exit, s_fin_all_exited):
         self.ip_exit = np.argmin(abs(p_exit - self.evo.model.p))
         self.p_exit = self.evo.model.p[self.ip_exit]
         self.kappa_exit = self.p_two / self.p_exit
         self.s_exit = np.log(self.kappa_exit)  # s<0
+
         s_exit_file = open(self.path + '/s_exit.dat', 'w+')
         np.savetxt(s_exit_file, self.s_exit, delimiter=' ', newline=' ')
         s_exit_file.close()
+
+        self.js_exit = self.s_exit.size - 1
+        self.all_exited = False
+        self.s_fin_all_exited = s_fin_all_exited
 
     def _init_arrays(self, grid_two_shape):
         self.G20_IC_two = np.zeros(grid_two_shape)
@@ -110,13 +116,27 @@ class EvolutionTwoBase(ABC):
     # Methods : print, save
     ##########################################################################
 
-    def print_init(self):
-        print('X_dimful =', self.X_dimful)
-        print('p_two : ', self.p_two)
-        print('w_two : ', self.w_two)
-        print('p_exit: ', self.p_exit)
-        print('s_exit: ', self.s_exit)
-        print('K_exit: ', self.kappa_exit) #todo
+    def print_class_vars(self):
+        # for k,v in params_two.items():
+        #     print(k, ":", v)
+        # print('X_dimful =', self.X_dimful)
+        # print('p_two : ', self.p_two)
+        # print('w_two : ', self.w_two)
+        # print('p_exit: ', self.p_exit)
+        # print('s_exit: ', self.s_exit)
+        # print('kappa_exit: ', self.kappa_exit)
+        # print('js_exit: ', self.js_exit)
+        print("=== EvolutionTwo has the following parameters: ===")
+        for key, value in vars(self).items():
+            if isinstance(value, np.ndarray):
+                if value.size > 3:
+                    preview = f"{value.flat[0]}, {value.flat[1]}, ..., {value.flat[-1]}"
+                    print(f"{key}=ndarray(shape={value.shape}: {preview})")
+                else:
+                    print(f"{key}={value}")
+            else:
+                print(f"{key}={value}")
+        print("==================================================")
 
     def print_heading(self):
         print("s \t\t|\t\t eta's \t\t|\t  g \t|\t -I's[0,0] \t\t||\t js_exit \t|\t X_dimful")
@@ -197,12 +217,12 @@ class EvolutionTwoBase(ABC):
 
         print('START rg_evolution twogrids')
         self.print_heading()
-
-        self.js_exit = self.s_exit.size - 1
-        self.all_exited = False
-
         self.s = 0
         n = 0
+
+        if self.s_fin_all_exited:
+            s_fin = self.s_exit.min() - self.ds
+            print('s_fin is overwritten with s_exit.min()-ds')
 
         while self.s > s_fin:
             self.evo.step_update()
