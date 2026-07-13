@@ -28,6 +28,10 @@ def main():
     nu_dimfull_in = (1/g_in)**(1/3)
     f_D_in, f_nu_in, f_lambda_in = np.ones((Np, Nw)), np.ones((Np, Nw)), np.ones((Np, Nw))
 
+    # from ...flow.models.grids import  grid_log0
+    # p = grid_log0(p_min, p_max, Np)
+    # f_nu_in[:,0] = p**2
+
     dim = 1
 
     s_fin = -3*ds

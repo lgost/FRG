@@ -32,7 +32,7 @@ etas_in = np.array([0., 0.])
 shape_f = (n_f, N_p, N_w)
 fs_in = np.ones(shape_f)
 p = grid_log0(p_min, p_max, N_p)
-fs_in[1,:,0] = p**2
+# fs_in[1,:,0] = p**2
 
 ds = 0.001
 

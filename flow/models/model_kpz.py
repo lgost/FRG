@@ -55,7 +55,7 @@ class ModelKPZ(ModelBase):
 
         f_D_derq = self.fq_[0]
         f_nu_derq = self.fq_[1]
-        f_lambda_derq = 0 #new TODO check if it is correct
+        f_lambda_derq = 0 #f_lambda=1, d1/dq=0
 
         k = f_Dq + self.rq
         l = q2 * (f_nuq + self.rq)
@@ -64,7 +64,6 @@ class ModelKPZ(ModelBase):
         fl4 = fl3 * l
 
         rk = self.rq * k
-        print('rk[0,1]',  rk.shape(), rk[0], rk[1], rk[-1])
 
         qdl = 2 * l + q2 * (self.q * f_nu_derq + 2 * q2 * self.rq_)
         qdf = self.q * f_lambda_derq
@@ -99,7 +98,7 @@ class ModelKPZ(ModelBase):
         return np.array([etaD, etaNu])
 
     def g_rhs_calc(self, g, eta):
-        rhs = 0#....
+        rhs = g  * (self.dim - 2 - eta[0] + 3 * eta[1])
         return rhs
 
     def Integral_upd(self, g, eta):
@@ -115,4 +114,3 @@ class ModelKPZ(ModelBase):
             ## Calculate f's derivative at w=0 on q-grid
             self.fq_[i] = self.f_spl[i, 0].derivative()(self.q)
             #......
-        print('calc_upd done')

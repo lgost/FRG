@@ -250,8 +250,6 @@ class ModelBase(ABC):
                                                      self.Nw, self.p,
                                                      self.p_max_plus_q, self.p_max_plus_q_div_p_max)
 
-        print('f_spline_upd done')
-
     def f_spline_upd_NLO(self, f:np.ndarray):
         """Updates splines of f's in p and w """
 
