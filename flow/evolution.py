@@ -1,9 +1,6 @@
 import sys
 
 import os
-# from collections.abc import Mapping
-# from numba import float32
-# from . import flow_dataclasses
 from .models.model_base import ModelBase
 from .flow_types import *
 from . import flow_dataclasses
@@ -23,10 +20,11 @@ class Evolution:
         self.ds = ds
         self.s = 0
 
-        # Initial condition for thr RG equations
+        # Initial condition for the RG equations
         self._init_IC(IC)
         self._check_consistency()
 
+        # Where to save the results
         self._init_save(path_save)
 
         # Print the init parameters

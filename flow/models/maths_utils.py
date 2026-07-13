@@ -7,9 +7,9 @@ def GaussLegendre(wq: np.ndarray, yq: np.ndarray):
     Parameters
     ----------
     wq : np.ndarray
-        weights
+        weights corresponding to the q-grid
     yq : np.ndarray
-        a function y(q) of q on the q-grid
+        a function y(q) on the q-grid
 
     Returns
     -------

@@ -64,6 +64,7 @@ class ModelKPZ(ModelBase):
         fl4 = fl3 * l
 
         rk = self.rq * k
+        print('rk[0,1]',  rk.shape(), rk[0], rk[1], rk[-1])
 
         qdl = 2 * l + q2 * (self.q * f_nu_derq + 2 * q2 * self.rq_)
         qdf = self.q * f_lambda_derq
@@ -114,3 +115,4 @@ class ModelKPZ(ModelBase):
             ## Calculate f's derivative at w=0 on q-grid
             self.fq_[i] = self.f_spl[i, 0].derivative()(self.q)
             #......
+        print('calc_upd done')
