@@ -276,7 +276,7 @@ class ModelBase(ABC):
         """Calculates r.h.s. of f's in NLO."""
 
     @abstractmethod
-    def eta_calc(self, g, eta):
+    def eta_calc(self, g):
         """Calculates new eta's in LO/NLO."""
 
     @abstractmethod

@@ -142,7 +142,7 @@ class Evolution:
         self.model.f_spline_upd(self.f)
         self.model.calc_upd()
         self.model.Integral_upd(self.g, self.eta)
-        self.eta = self.model.eta_calc(self.g, self.eta)
+        self.eta = self.model.eta_calc(self.g)
         self.g -= self.ds * self.model.g_rhs_calc(self.g, self.eta)
         self.f -= self.ds * self.model.f_rhs_calc(self.f, self.eta)
 

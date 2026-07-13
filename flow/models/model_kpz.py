@@ -2,9 +2,12 @@ import numpy as np
 
 from .. import flow_dataclasses
 from .model_base import ModelBase
-from .maths_utils import *
+# from .maths_utils import *
+from .maths_utils_numba import *
 from ..flow_types import *
+import numba as nb
 
+NB_OPTS = dict(cache=True)
 
 class ModelKPZ(ModelBase):
     def __init__(self,
@@ -42,7 +45,8 @@ class ModelKPZ(ModelBase):
     def f_rhs_calc_NLO(self, g, eta):
         return self.toy_f_rhs
 
-    def eta_calc(self, g, eta): # TODO experiment outside function with f etc args with jit, or jit here
+    @nb.njit(**NB_OPTS)
+    def eta_calc(self, g): # TODO experiment outside function with f etc args with jit, or jit here
         ## Powers of q
         q2 = self.q2
         qd1 = self.qd1
