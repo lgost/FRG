@@ -5,9 +5,6 @@ from .model_base import ModelBase
 # from .maths_utils import *
 from .maths_utils_numba import *
 from ..flow_types import *
-import numba as nb
-
-NB_OPTS = dict(cache=True)
 
 class ModelKPZ(ModelBase):
     def __init__(self,
@@ -38,14 +35,68 @@ class ModelKPZ(ModelBase):
         return I
 
     def Integral_pfixed_dD_NLO(self, g, eta):
-        return self.toy_f_rhs
+        # (Np, Nw,  degq, degtheta)
+        p2 = self.p_broad2
+        w = self.w_broad
+        q2 = self.q_broad2
+
+        sin_d2 = self.sin_d2_broad
+        pqcos = self.pqcos_broad
+
+        Q2 = self.Q_broad2
+
+        rQ = self.rQ_broad
+        rq = self.rq_broad
+        rq_ = self.rq__broad
+
+        ## f_D(w=0,q) = fq[0] ,  f_nu(w=0,q) = fq[1]
+        f_Dq = self.fq[0,np.newaxis,np.newaxis,:,np.newaxis]
+        f_nuq = self.fq[1, np.newaxis, np.newaxis, :, np.newaxis]
+
+        kq = f_Dq + rq
+        lq = q2 * (f_nuq + rq)
+        kQ = self.fQ[0] + rQ
+        lQ = Q2 * (self.fQ[1] + rQ)
+
+        ## eta_D = eta[0] ,  eta_nu = eta[1]
+        dsR_D = - eta[0] * rq - 2 * q2 * rq_
+        dsR_nu = - eta[1] * rq - 2 * q2 * rq_
+
+        f_lambdaq = 1#np.ones_like(q2)
+        f_lambdaQ = 1#np.ones_like(Q2)
+        f_lambda_p = 1
+
+        fl = f_lambdaq * lQ + f_lambdaQ * lq
+
+        wff2 = (w * f_lambdaq * f_lambdaQ) ** 2
+        denom_a = 2 * lq * lQ * (fl ** 2 + wff2)
+        A3a = (fl) / denom_a
+
+        denom_c = denom_a ** 2 * lq / lQ
+        fl2 = fl + f_lambdaQ * lq
+        A3c = (fl ** 2 * fl2 + wff2 * f_lambdaq * lQ) / denom_c
+
+        gq = self.Jdim1
+
+        Fqtw = sin_d2 * (q2 + pqcos) ** 2 * kQ * (A3a * dsR_D - A3c * dsR_nu * 2 * q2 * lq * kq)
+        I_D = 2 * g * f_lambda_p ** 2 * self.vdim1 / (2 * np.pi) * GaussLegendre2D_NLO(self.wq, self.wtheta, gq, Fqtw)
+
+        denom_d = denom_c * f_lambdaq / lq ** 2
+        A3d = (fl ** 2 * lQ + (w * f_lambdaQ) ** 2 * fl2 * f_lambdaq) / denom_d  # kloss2012_omega_integration.nb
+
+        Fqtw = sin_d2 * (q2 + pqcos) * (-pqcos * f_lambdaQ * lQ * A3a * dsR_D + (
+                    2 * pqcos * f_lambdaQ * lQ * lq * kq * A3c + (p2 + pqcos) * f_lambdaq * kQ * (
+                        f_lambdaq ** 2 * A3d - lq ** 2 * A3c)) * q2 * dsR_nu)
+        I_nu = - 2 * g * f_lambda_p * self.vdim1 / (2 * np.pi) * GaussLegendre2D_NLO(self.wq, self.wtheta, gq, Fqtw)  # / (p**2) outside
+
+        return np.array([I_D, I_nu])
 
     def f_rhs_calc_LO(self, g, eta):  # LO = NLO(...,1,1) (is it true?) #<- TODO for kpz
         return self.toy_f_rhs
+
     def f_rhs_calc_NLO(self, g, eta):
         return self.toy_f_rhs
 
-    @nb.njit(**NB_OPTS)
     def eta_calc(self, g): # TODO experiment outside function with f etc args with jit, or jit here
         ## Powers of q
         q2 = self.q2
@@ -106,8 +157,11 @@ class ModelKPZ(ModelBase):
         return rhs
 
     def Integral_upd(self, g, eta):
-        self.Integral = self.Integral_pfixed(g, eta)
-        #.....
+        Int = self.Integral_pfixed(g, eta)
+        self.Integral = Int.copy()
+        self.Integral[1, 1:, :] /= self.p[1:, np.newaxis] ** 2
+        self.Integral[1, 0, :] = self.Integral[1, 1, :]
+        # print('Is_D=', self.Integral[0, 0, (0, 1, -1)])
 
     def calc_upd(self):
         for i in range(self.n_f):

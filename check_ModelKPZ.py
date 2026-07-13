@@ -44,19 +44,19 @@ evo_params = IC, ds, path_save
 
 flow = create.create('KPZ', model_params,'evo1', evo_params)
 
-# s_fin=-3*ds
-# n_print=1
-# n_save_params=1
-# n_save_f=1
-# flow.rg_evolution(s_fin, n_print, n_save_params, n_save_f)
+s_fin=-1*ds
+n_print=1
+n_save_params=1
+n_save_f=1
+flow.rg_evolution(s_fin, n_print, n_save_params, n_save_f)
 
 ### numba VS nonumba for eta_calc
-s_fin=-201*ds
-n_print=100
-n_save_params=100
-n_save_f=100
-
-start = perf_counter()
-flow.rg_evolution(s_fin, n_print, n_save_params, n_save_f)
-end = perf_counter()
-print('time =', end - start)
+# s_fin=-201*ds
+# n_print=100
+# n_save_params=100
+# n_save_f=100
+#
+# start = perf_counter()
+# flow.rg_evolution(s_fin, n_print, n_save_params, n_save_f)
+# end = perf_counter()
+# print('time =', end - start)
