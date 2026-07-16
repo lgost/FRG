@@ -1,20 +1,12 @@
-import numba as nb
+import jax
+import jax.numpy as jnp
 
-NB_OPTS = dict(cache=True)
-# NB_OPTS = dict(cache=True,parallel=True,nogil=True)
-
-from .maths_utils_numba import *
-from ..flow_types import *
+from .maths_utils_jax import *
+# from ..flow_types import *
 
 
-@nb.njit(NB_REAL[:](
-    NB_REAL,
-    NB_REAL[:], NB_REAL[:], NB_REAL[:], NB_REAL[:], NB_REAL[:],
-    NB_REAL[:,:], NB_REAL[:,:],
-    NB_REAL[:], NB_REAL[:],
-    NB_REAL, NB_REAL, NB_REAL[:]
-), **NB_OPTS)
-def eta_calc_numba(g,
+@jax.jit
+def eta_calc_jit(g,
                    q, q2, qd1, qd3, qd5,
                    fq, fq_,
                    rq, rq_,
@@ -66,18 +58,10 @@ def eta_calc_numba(g,
     etaNu = etaNu / det
     etaD = etaD / det
 
-    return np.array([etaD, etaNu])
+    return jnp.array([etaD, etaNu])
 
-@nb.njit(NB_REAL[:](
-    NB_REAL, NB_REAL[:],
-    NB_REAL[:,:,:,:], NB_REAL[:,:,:,:], NB_REAL[:,:,:,:],
-    NB_REAL[:,:,:,:], NB_REAL[:,:,:,:], NB_REAL[:,:,:,:],
-    NB_REAL[:,:,:,:], NB_REAL[:,:,:,:], NB_REAL[:,:,:,:],
-    NB_REAL[:,:], NB_REAL[:,:,:,:,:],
-    NB_REAL[:], NB_REAL,
-    NB_REAL[:], NB_REAL[:]
-), **NB_OPTS)
-def Integral_pfixed_dD_NLO_numba(
+@jax.jit
+def Integral_pfixed_dD_NLO_jit(
         g, eta,
         p_broad2, w_broad, q_broad2,
         sin_d2_broad, pqcos_broad, Q_broad2,
@@ -101,8 +85,8 @@ def Integral_pfixed_dD_NLO_numba(
     rq_ = rq__broad
 
     ## f_D(w=0,q) = fq[0] ,  f_nu(w=0,q) = fq[1]
-    f_Dq = fq[0,np.newaxis,np.newaxis,:,np.newaxis]
-    f_nuq = fq[1, np.newaxis, np.newaxis, :, np.newaxis]
+    f_Dq = fq[0][None, None, :, None]
+    f_nuq = fq[1][None, None, :, None]
 
     kq = f_Dq + rq
     lq = q2 * (f_nuq + rq)
@@ -130,7 +114,7 @@ def Integral_pfixed_dD_NLO_numba(
     gq = Jdim1
 
     Fqtw = sin_d2 * (q2 + pqcos) ** 2 * kQ * (A3a * dsR_D - A3c * dsR_nu * 2 * q2 * lq * kq)
-    I_D = 2 * g * f_lambda_p ** 2 * vdim1 / (2 * np.pi) * GaussLegendre2D_NLO(wq, wtheta, gq, Fqtw)
+    I_D = 2 * g * f_lambda_p ** 2 * vdim1 / (2 * jnp.pi) * GaussLegendre2D_NLO(wq, wtheta, gq, Fqtw)
 
     denom_d = denom_c * f_lambdaq / lq ** 2
     A3d = (fl ** 2 * lQ + (w * f_lambdaQ) ** 2 * fl2 * f_lambdaq) / denom_d  # kloss2012_omega_integration.nb
@@ -138,6 +122,6 @@ def Integral_pfixed_dD_NLO_numba(
     Fqtw = sin_d2 * (q2 + pqcos) * (-pqcos * f_lambdaQ * lQ * A3a * dsR_D + (
                 2 * pqcos * f_lambdaQ * lQ * lq * kq * A3c + (p2 + pqcos) * f_lambdaq * kQ * (
                     f_lambdaq ** 2 * A3d - lq ** 2 * A3c)) * q2 * dsR_nu)
-    I_nu = - 2 * g * f_lambda_p * vdim1 / (2 * np.pi) * GaussLegendre2D_NLO(wq, wtheta, gq, Fqtw)  # / (p**2) outside
+    I_nu = - 2 * g * f_lambda_p * vdim1 / (2 * jnp.pi) * GaussLegendre2D_NLO(wq, wtheta, gq, Fqtw)  # / (p**2) outside
 
-    return np.array([I_D, I_nu])
+    return jnp.array([I_D, I_nu])

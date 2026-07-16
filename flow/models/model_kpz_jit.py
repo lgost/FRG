@@ -1,6 +1,7 @@
 import numpy as np
 
-from . import kpz_numbafunc
+# from . import kpz_numbafunc
+from .kpz_jaxfunc import *
 from .. import flow_dataclasses
 from .model_base import ModelBase
 from .maths_utils import *
@@ -37,15 +38,24 @@ class ModelKPZ(ModelBase):
         return I
 
     def Integral_pfixed_dD_NLO(self, g, eta):
-        return self.toy_f_rhs
+        return Integral_pfixed_dD_NLO_jit(
+            g, eta,
+            self.p_broad2, self.w_broad, self.q_broad2,
+            self.sin_d2_broad, self.pqcos_broad, self.Q_broad2,
+            self.rQ_broad, self.rq_broad, self.rq__broad,
+            self.fq, self.fQ,
+            self.Jdim1, self.vdim1,
+            self.wq, self.wtheta
+        )
 
     def f_rhs_calc_LO(self, g, eta):  # LO = NLO(...,1,1) (is it true?) #<- TODO for kpz
         return self.toy_f_rhs
+
     def f_rhs_calc_NLO(self, g, eta):
         return self.toy_f_rhs
 
     def eta_calc(self, g):
-        return kpz_numbafunc.eta_calc_numba(g,
+        return eta_calc_jit(g,
                  self.q, self.q2, self.qd1, self.qd3, self.qd5,
                  self.fq, self.fq_,
                  self.rq, self.rq_,
@@ -56,8 +66,14 @@ class ModelKPZ(ModelBase):
         return rhs
 
     def Integral_upd(self, g, eta):
-        self.Integral = self.Integral_pfixed(g, eta)
-        #.....
+        Int = self.Integral_pfixed(g, eta)
+        self.Integral = Int.copy()
+        # self.Integral[1, 1:, :] /= self.p[1:, np.newaxis] ** 2
+        # self.Integral[1, 0, :] = self.Integral[1, 1, :]
+
+        ##jax-compatible:
+        self.Integral = self.Integral.at[1, 1:, :].divide( self.p[1:, None] ** 2 )
+        self.Integral = self.Integral.at[1, 0, :].set(self.Integral[1, 1, :])
 
     def calc_upd(self):
         for i in range(self.n_f):

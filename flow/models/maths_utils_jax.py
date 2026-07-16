@@ -1,11 +1,8 @@
-import numpy as np
+import jax
+import jax.numpy as jnp
 
-NB_OPTS = dict(cache=True)
-
-from ..flow_types import *
-
-@nb.njit(NB_REAL(NB_REAL[:],NB_REAL[:]), **NB_OPTS)
-def GaussLegendre(wq: np.ndarray, yq: np.ndarray):
+@jax.jit
+def GaussLegendre(wq: jnp.ndarray, yq: jnp.ndarray):
     """Calculates integral of yq with the Gauss-Legendre method.
 
     Parameters
@@ -20,12 +17,9 @@ def GaussLegendre(wq: np.ndarray, yq: np.ndarray):
     integral of y(q) over q
     """
 
-    return np.sum(wq * yq)
+    return jnp.sum(wq * yq)
 
-# @nb.njit(NB_REAL[:,:](
-#     NB_REAL[:],NB_REAL[:],
-#     NB_REAL[:],NB_REAL[:,:,:,:]
-# ), **NB_OPTS) #can't jit it, einsum not supported
+@jax.jit
 def GaussLegendre2D_NLO(wq, wtheta,
                         gq, Fpwqt):
     """Calculates integral of Fpwqt*gq with the Gauss-Legendre method.
@@ -43,7 +37,7 @@ def GaussLegendre2D_NLO(wq, wtheta,
         integral over q and theta (a function of p and w)
     """
 
-    Fpwq = np.einsum('pwqt,t->pwq', Fpwqt, wtheta)
+    Fpwq = jnp.einsum('pwqt,t->pwq', Fpwqt, wtheta)
     gq_weight = wq * gq
-    Ipw = np.einsum('pwq,q->pw', Fpwq, gq_weight)
+    Ipw = jnp.einsum('pwq,q->pw', Fpwq, gq_weight)
     return Ipw

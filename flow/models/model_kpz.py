@@ -3,7 +3,8 @@ import numpy as np
 from .. import flow_dataclasses
 from .model_base import ModelBase
 # from .maths_utils import *
-from .maths_utils_numba import *
+# from .maths_utils_numba import *
+from .maths_utils_jax import *
 from ..flow_types import *
 
 class ModelKPZ(ModelBase):

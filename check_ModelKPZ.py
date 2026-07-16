@@ -34,7 +34,8 @@ etas_in = np.array([0., 0.])
 shape_f = (n_f, N_p, N_w)
 fs_in = np.ones(shape_f)
 p = grid_log0(p_min, p_max, N_p)
-# fs_in[1,:,0] = p**2
+for iw in range(N_w):
+    fs_in[1,:,iw] = p**2
 
 ds = 0.001
 
@@ -44,19 +45,19 @@ evo_params = IC, ds, path_save
 
 flow = create.create('KPZ', model_params,'evo1', evo_params)
 
-s_fin=-1*ds
-n_print=1
-n_save_params=1
-n_save_f=1
-flow.rg_evolution(s_fin, n_print, n_save_params, n_save_f)
-
-### numba VS nonumba for eta_calc
-# s_fin=-201*ds
-# n_print=100
-# n_save_params=100
-# n_save_f=100
-#
-# start = perf_counter()
+# s_fin=-1*ds
+# n_print=1
+# n_save_params=1
+# n_save_f=1
 # flow.rg_evolution(s_fin, n_print, n_save_params, n_save_f)
-# end = perf_counter()
-# print('time =', end - start)
+
+### numba VS nonumba for eta_calc and Integral_pfixed_dD_NLO
+s_fin=-21*ds
+n_print=10
+n_save_params=10
+n_save_f=10
+
+start = perf_counter()
+flow.rg_evolution(s_fin, n_print, n_save_params, n_save_f)
+end = perf_counter()
+print('time =', end - start)

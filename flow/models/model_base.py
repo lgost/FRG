@@ -109,7 +109,6 @@ class ModelBase(ABC):
         self.q_max = par.q_max
         self.degq = par.deg_q
         x, w = np.polynomial.legendre.leggauss(self.degq)
-        sinx, w = np.polynomial.legendre.leggauss(self.degq)
         self.q = self.q_max / 2 * (1 + x)
         self.wq = self.q_max / 2 * w
 
