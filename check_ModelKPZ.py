@@ -11,7 +11,7 @@ n_f=2
 approximation = "NLO"
 dim=1
 
-path_save = 'check'
+path_save = 'checks/kpz_1grid_2D_NLO'
 
 alpha = 2
 beta = 1
@@ -21,7 +21,7 @@ r_ = lambda x : regulator.wett_alpha_beta_(x, alpha, beta)
 
 N_p, p_min, p_max = 100, 0.01, 100
 N_w, w_min, w_max = 100, 0.01, 100
-q_max, deg_q, degtheta = 10, 40, 2
+q_max, deg_q, degtheta = 4, 40, 10
 
 params_grid_external=flow_dataclasses.Params_grid_external(N_p=N_p, p_min=p_min, p_max=p_max,
                                                            N_w=N_w, w_min=w_min, w_max=w_max)
@@ -29,17 +29,18 @@ params_grid_internal=flow_dataclasses.Params_grid_internal(deg_q, q_max, degthet
 
 model_params = n_f, approximation, dim, params_grid_external, params_grid_internal, r, r_, coeff_nu
 
-g_in = 1.
+g_in = 31.
 etas_in = np.array([0., 0.])
 shape_f = (n_f, N_p, N_w)
-fs_in = np.ones(shape_f)
+f_in = np.ones(shape_f)
 p = grid_log0(p_min, p_max, N_p)
-for iw in range(N_w):
-    fs_in[1,:,iw] = p**2
+# for iw in range(N_w):
+#     f_in[1,:,iw] = p**2
 
-ds = 0.001
+# ds = 0.001
+ds = 0.002
 
-IC = flow_dataclasses.IC_NLO(g_in=g_in, etas_in=etas_in, fs_in=fs_in)
+IC = flow_dataclasses.IC_NLO(g_in=g_in, etas_in=etas_in, fs_in=f_in)
 
 evo_params = IC, ds, path_save
 
@@ -51,13 +52,21 @@ flow = create.create('KPZ', model_params,'evo1', evo_params)
 # n_save_f=1
 # flow.rg_evolution(s_fin, n_print, n_save_params, n_save_f)
 
-### numba VS nonumba for eta_calc and Integral_pfixed_dD_NLO
-s_fin=-21*ds
-n_print=10
-n_save_params=10
-n_save_f=10
+### numba VS nonumba for eta_calc
+# s_fin=-21*ds
+# n_print=10
+# n_save_params=10
+# n_save_f=10
+#
+# start = perf_counter()
+# flow.rg_evolution(s_fin, n_print, n_save_params, n_save_f)
+# end = perf_counter()
+# print('time =', end - start)
 
-start = perf_counter()
+
+### test flow 1grid
+s_fin=-2
+n_print=120
+n_save_params=120
+n_save_f=120
 flow.rg_evolution(s_fin, n_print, n_save_params, n_save_f)
-end = perf_counter()
-print('time =', end - start)

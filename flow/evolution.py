@@ -144,7 +144,7 @@ class Evolution:
         self.model.Integral_upd(self.g, self.eta)
         self.eta = self.model.eta_calc(self.g)
         self.g -= self.ds * self.model.g_rhs_calc(self.g, self.eta)
-        self.f -= self.ds * self.model.f_rhs_calc(self.f, self.eta)
+        self.f -= self.ds * self.model.f_rhs_calc(self.eta, self.f)
 
     def rg_evolution(self, s_fin: REAL, n_print: int, n_save_params: int, n_save_f: int):
         """Integration of the flow equations with simple Euler step.

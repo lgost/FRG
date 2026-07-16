@@ -44,10 +44,10 @@ class ModelBase(ABC):
 
         if self.approximation == "NLO":
             self.Integral_pfixed = self.Integral_pfixed_dD_NLO
-            self.f_rhs_calc = self.f_rhs_calc_NLO
+            self.f_rhs_logder_calc = self.f_rhs_logder_calc_NLO
         elif approximation == "LO":
             self.Integral_pfixed = self.Integral_pfixed_dD_LO
-            self.f_rhs_calc = self.f_rhs_calc_LO
+            self.f_rhs_logder_calc = self.f_rhs_logder_calc_LO
         else:
             sys.exit('Wrong approximation')
 
@@ -266,13 +266,27 @@ class ModelBase(ABC):
     def Integral_pfixed_dD_NLO(self, g, eta):
         """Calculates Integrals in the rhs of dsf in NLO. Works with whole p grid."""
 
-    @abstractmethod
-    def f_rhs_calc_LO(self, g, eta):
-        """Calculates r.h.s. of f's in LO."""
+    def f_rhs_logder_calc_LO(self, eta):
+        """Returns p*df/dp, shape (n_f, Np,Nw)."""
+
+        rhs_logder = np.zeros((self.n_f, *self.external_grid_shape))
+
+        for i in range(self.n_f):
+            pder = np.array([spl.derivative()(self.p) for spl in self.f_spl[i]])  ## shape (Nw,Np)
+            pder = self.p[np.newaxis, :] * pder
+            rhs_logder[i] = pder.T  ## shape (Np,Nw)
+
+        return rhs_logder
 
     @abstractmethod
-    def f_rhs_calc_NLO(self, g, eta):
+    def f_rhs_logder_calc_NLO(self, eta):
         """Calculates r.h.s. of f's in NLO."""
+
+    def f_rhs_calc(self, eta,f):
+        eta_f = f.copy()
+        eta_f *= eta[:,None,None]
+        dim_flow = eta_f + self.f_rhs_logder_calc(eta)
+        return dim_flow + self.Integral
 
     @abstractmethod
     def eta_calc(self, g):

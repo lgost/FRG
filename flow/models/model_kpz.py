@@ -2,9 +2,9 @@ import numpy as np
 
 from .. import flow_dataclasses
 from .model_base import ModelBase
-# from .maths_utils import *
+from .maths_utils import *
 # from .maths_utils_numba import *
-from .maths_utils_jax import *
+# from .maths_utils_jax import *
 from ..flow_types import *
 
 class ModelKPZ(ModelBase):
@@ -24,14 +24,14 @@ class ModelKPZ(ModelBase):
                  params_grid_internal,
                  r, r_, coeff_nu)
 
-        self.toy_f_rhs = np.zeros((self.n_f, *self.external_grid_shape))
-
+        # self.toy_f_rhs = np.zeros((self.n_f, *self.external_grid_shape))
+#todo delete
 
     ##########################################################################
     # Methods : calc
     ##########################################################################
 
-    def Integral_pfixed_dD_LO(self, g, eta):
+    def Integral_pfixed_dD_LO(self, g, eta):# LO = NLO(...,1,1) (is it true?) #<- TODO for kpz
         I = np.zeros((self.n_f, *self.external_grid_shape))#...
         return I
 
@@ -92,13 +92,24 @@ class ModelKPZ(ModelBase):
 
         return np.array([I_D, I_nu])
 
-    def f_rhs_calc_LO(self, g, eta):  # LO = NLO(...,1,1) (is it true?) #<- TODO for kpz
-        return self.toy_f_rhs
+    def f_rhs_logder_calc_NLO(self, eta):
+        """Returns p*df/dp + (2-eta[1])*w*df/dw, shape (n_f, Np,Nw).
+        Model-dependent."""
 
-    def f_rhs_calc_NLO(self, g, eta):
-        return self.toy_f_rhs
+        rhs_pder = self.f_rhs_logder_calc_LO(eta)
+        rhs_wder = np.zeros((self.n_f, *self.external_grid_shape))
 
-    def eta_calc(self, g): # TODO experiment outside function with f etc args with jit, or jit here
+        for i in range(self.n_f):
+            wder = np.array([spl.derivative()(self.w) for spl in self.f_spl_w[i]])  # shape (Np,Nw)
+            wder = self.w[np.newaxis, :] * wder
+            rhs_wder[i] = wder
+
+        rhs_wder *= (2 - eta[1]) ## dimension of w
+
+        return rhs_pder + rhs_wder
+
+
+    def eta_calc(self, g):
         ## Powers of q
         q2 = self.q2
         qd1 = self.qd1
@@ -163,6 +174,7 @@ class ModelKPZ(ModelBase):
         self.Integral[1, 1:, :] /= self.p[1:, np.newaxis] ** 2
         self.Integral[1, 0, :] = self.Integral[1, 1, :]
         # print('Is_D=', self.Integral[0, 0, (0, 1, -1)])
+        # TODO quadratic extrapolation
 
     def calc_upd(self):
         for i in range(self.n_f):
@@ -172,4 +184,3 @@ class ModelKPZ(ModelBase):
 
             ## Calculate f's derivative at w=0 on q-grid
             self.fq_[i] = self.f_spl[i, 0].derivative()(self.q)
-            #......

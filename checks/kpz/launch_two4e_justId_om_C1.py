@@ -13,7 +13,7 @@ def main():
 
     Np, p_min, p_max = 100, 0.01, 100
     Nw, w_min, w_max = Np, p_min, p_max
-    q_max, deg_q, degtheta = 10, 40, 2
+    q_max, deg_q, degtheta = 4, 16, 2
     omega_max, deg_omega = w_max, 500
 
     p_exit = q_max
@@ -23,7 +23,7 @@ def main():
 
     eta_D_in, eta_nu_in = 0, 0
 
-    ds = 0.001
+    ds = 0.002
     g_in = 1.
     nu_dimfull_in = (1/g_in)**(1/3)
     f_D_in, f_nu_in, f_lambda_in = np.ones((Np, Nw)), np.ones((Np, Nw)), np.ones((Np, Nw))
@@ -33,10 +33,14 @@ def main():
     # f_nu_in[:,0] = p**2
 
     dim = 1
+    #
+    # s_fin = -3*ds
+    # n_sample_print = 1
+    # n_sample_save = 1
 
-    s_fin = -3*ds
-    n_sample_print = 1
-    n_sample_save = 1
+    s_fin = -20
+    n_sample_print = 80
+    n_sample_save = 80
 
     alpha = 2
     beta = 1
@@ -49,7 +53,7 @@ def main():
              p_exit,
              ds, g_in, nu_dimfull_in, eta_D_in, eta_nu_in,
              f_D_in, f_nu_in, f_lambda_in,
-             r, r_, dim, path_save, 1)
+             r, r_, dim, path_save, 0)
 
     #########################################################
     start = os.times()

@@ -1,5 +1,5 @@
-from flow_types import REAL
-from flow_dataclasses import *
+from .flow_types import REAL
+from .flow_dataclasses import *
 
 from .evolution import *
 from .models import ModelBase, ModelToy, ModelKPZ
