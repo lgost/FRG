@@ -6,14 +6,14 @@ from ..flow_types import REAL
 from ..evolution import Evolution
 
 
+_NUM_POWERLAW = 5
+
 class EvolutionTwoBase(ABC):
     def __init__(self,
                  evo: Evolution,
                  **params_two
                  ):
         self.evo = evo
-        self.s = self.evo.s
-        self.ds = self.evo.ds
         self.path = self.evo.path
 
         Np_two = params_two.get('Np_two')
@@ -100,14 +100,19 @@ class EvolutionTwoBase(ABC):
         self.s_fin_all_exited = s_fin_all_exited
 
     def _init_arrays(self, grid_two_shape):
+        ## To record the corr function G^(2,0) and f's at the exit from the 1st grid
         self.G20_IC_two = np.zeros(grid_two_shape)
 
     def _init_X_dimful(self, X_dimful_in):
         self.X_dimful = X_dimful_in.copy()
 
     def _init_calc(self):
-        ## Slope of functions f(w) at p=p_exit for continuation to w>w_max
-        self.powerlaw_w_f = np.zeros(self.evo.model.n_f)
+
+        self.p_two2 = self.p_two ** 2
+        self.w_two2 = self.w_two ** 2
+
+        ## Dimensionful f's of w (at p=p-exit) at the exit from the 1st grid
+        self.f_IC_two = np.zeros((self.evo.model.n_f, self.Nw_two)) ##
 
     def _init_save(self, path):
         self.exit_par_file = open(path + '/exit_parameters.bin', 'wb+')
@@ -144,7 +149,7 @@ class EvolutionTwoBase(ABC):
     def print_line(self):
         """ Prints flowing parameters at RG time s."""
         print(
-            f"\t{self.s:.3f}" +
+            f"\t{self.evo.s:.3f}" +
             " | " +
             "".join(f"\t{x:.5f}" for x in self.evo.eta) +
             " | " +
@@ -164,36 +169,83 @@ class EvolutionTwoBase(ABC):
         ## Overwrite the file with the updated array
         np.save(self.path + '/G20_IC_two.npy', self.G20_IC_two)
         exit_param = np.concatenate([
-            [self.js_exit, self.s],
-            self.X_dimful,
-            self.powerlaw_w_f
+            [self.js_exit, self.evo.s],
+            self.X_dimful
         ])
         exit_param.tofile(self.exit_par_file)
 
     ##########################################################################
     # Methods : calc
     ##########################################################################
+    # def power_law_w_avg_loggrid(f, ip, num):  # pow
+    #     f_m = f[ip, -num:]
+    #     f_m_ = np.gradient(f[ip, -num:], self.evo.w[-num:])
+    #     b = self.evo.w[-num:] * f_m_ / f_m
+    #     b_avg = np.average(b)
+    #     return b_avg
 
-    @abstractmethod
+    def powerlaw_w_calc(self):
+        '''Calculates slope of functions f(w) at p=p_exit for
+        continuation to w>w_max.
+        Works for equally(!)-spaced log-grid:
+        np.log(self_p[j+1]) - np.log(self_p[j]) = const
+        '''
+
+        num = _NUM_POWERLAW
+        f_m = self.evo.f[:,self.ip_exit, -num:] ##shape=(n_f, num)
+        f_m_ = np.gradient(f_m, self.evo.model.w[-num:], axis=1)
+        b = self.evo.model.w[-num:] * f_m_ / f_m
+        b_avg = np.average(b, axis=1)
+        return b_avg ##shape=(n_f,)
+
+    def update_f_IC_two(self):
+        ip_two = self.js_exit
+        kappa = np.exp(self.evo.s)  ## *Lambda, Lambda = 1 in the code
+        ipe = self.ip_exit
+
+        w_two_adim = self.w_two / kappa ** 2 / self.X_dimful[1]  ## X[1]=nu
+
+        where_small = np.where(w_two_adim <= self.evo.model.w_max)[0]
+        where_big = np.where(w_two_adim > self.evo.model.w_max)[0]
+        w_two_adim_small = w_two_adim[where_small]  ## splines work here
+        w_two_adim_big = w_two_adim[where_big]  ## continuation works here
+        print('where_small:', where_small, 'where_big:', where_big)
+
+        for i in range(self.evo.model.n_f):
+            f_exit = self.evo.model.f_spl_w[i, ipe](w_two_adim_small)
+            self.f_IC_two[i, where_small] = self.X_dimful[i] * f_exit
+
+        if where_big.size != 0:
+            ## Continuation of f_dimless to w>w_max at p=p_max
+            powerlaw_w = self.powerlaw_w_calc()  ## slope in w at p=p_exit
+            print('powerlaw_w:', powerlaw_w)
+
+            for i in range(self.evo.model.n_f):
+                f_exit_cont = self.evo.f[i, ipe, -1] * (w_two_adim_big / self.evo.model.w_max) ** powerlaw_w[i]
+                self.f_IC_two[i, where_big] = self.X_dimful[i] * f_exit_cont
+
     def dimful_update(self):
-        pass
+        '''Update dimensionful parameters.'''
+
+        ## -ds*(-eta) = + ds*eta
+        self.X_dimful += self.evo.ds * self.evo.eta * self.X_dimful
 
     @abstractmethod
-    def record_IC_two(self, s):
-        pass
+    def update_IC_two(self):
+        '''Update dimensionful correlation function. Model-dependent.'''
 
-    #todo calc methods->not abstract? are they common for different models?
+        pass
 
     ##########################################################################
     # Methods : RG evolution
     ##########################################################################
 
     def step_two(self):
-        self.dimful_update()  # todo self.X_dimful = calc_X_dimful(..)? to make it universal
+        self.dimful_update()
         if not self.all_exited:
-            if self.s <= self.s_exit[self.js_exit]:
-                print('---> exit:', self.s, self.s_exit[self.js_exit], self.js_exit)
-                self.record_IC_two(self.s)
+            if self.evo.s <= self.s_exit[self.js_exit]:
+                print(f'---> exit: s = {self.evo.s}, s_exit = {self.s_exit[self.js_exit]}, js_exit = {self.js_exit}')
+                self.update_IC_two()
                 self.write_files_two()
                 self.js_exit -= 1
                 if self.js_exit < 0:
@@ -217,14 +269,14 @@ class EvolutionTwoBase(ABC):
 
         print('START rg_evolution twogrids')
         self.print_heading()
-        self.s = 0
+        self.evo.s = 0
         n = 0
 
         if self.s_fin_all_exited:
-            s_fin = self.s_exit.min() - self.ds
+            s_fin = self.s_exit.min() - self.evo.ds
             print('s_fin is overwritten with s_exit.min()-ds')
 
-        while self.s > s_fin:
+        while self.evo.s > s_fin:
             self.evo.step_update()
             self.step_two()
 
@@ -237,7 +289,7 @@ class EvolutionTwoBase(ABC):
                 self.evo.write_files_f()
 
             n += 1
-            self.s -= self.ds
+            self.evo.s -= self.evo.ds
 
         self.evo.close_files()
         self.close_files()

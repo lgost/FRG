@@ -1,5 +1,5 @@
-from . import two4e_justId_om_C1 as flow
-from ...flow import regulator
+import two4e_justId_om_C1 as flow
+import regulator
 import numpy as np
 import os
 import time
@@ -17,7 +17,7 @@ def main():
     omega_max, deg_omega = w_max, 500
 
     p_exit = q_max
-    Np_two = 2
+    Np_two = 10
     p_min_two, p_max_two = 1, p_exit
     enslave_w_to_p_two, Nw_two, w_min_two, w_max_two = True, 0, 0, 0
 
@@ -38,9 +38,9 @@ def main():
     # n_sample_print = 1
     # n_sample_save = 1
 
-    s_fin = -20
-    n_sample_print = 80
-    n_sample_save = 80
+    s_fin = -ds-1.40974598
+    n_sample_print = 100
+    n_sample_save = 100
 
     alpha = 2
     beta = 1

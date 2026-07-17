@@ -1,6 +1,5 @@
 import numpy as np
 
-from .. import flow_dataclasses
 from .model_base import ModelBase
 from .maths_utils import *
 # from .maths_utils_numba import *
@@ -8,31 +7,13 @@ from .maths_utils import *
 from ..flow_types import *
 
 class ModelKPZ(ModelBase):
-    def __init__(self,
-                 n_f: int,
-                 approximation: str,
-                 dim: int,
-                 params_grid_external: flow_dataclasses.Params_grid_external,
-                 params_grid_internal: flow_dataclasses.Params_grid_internal,
-                 r, r_, coeff_nu: REAL
-                 ):
-
-        super().__init__(n_f,
-                 approximation,
-                 dim,
-                 params_grid_external,
-                 params_grid_internal,
-                 r, r_, coeff_nu)
-
-        # self.toy_f_rhs = np.zeros((self.n_f, *self.external_grid_shape))
-#todo delete
 
     ##########################################################################
     # Methods : calc
     ##########################################################################
 
     def Integral_pfixed_dD_LO(self, g, eta):# LO = NLO(...,1,1) (is it true?) #<- TODO for kpz
-        I = np.zeros((self.n_f, *self.external_grid_shape))#...
+        I = np.zeros((self.n_f, *self.external_grid_shape))#todo
         return I
 
     def Integral_pfixed_dD_NLO(self, g, eta):
@@ -104,7 +85,7 @@ class ModelKPZ(ModelBase):
             wder = self.w[np.newaxis, :] * wder
             rhs_wder[i] = wder
 
-        rhs_wder *= (2 - eta[1]) ## dimension of w
+        rhs_wder *= 2 - eta[1] ## dimension of w
 
         return rhs_pder + rhs_wder
 

@@ -180,35 +180,6 @@ class FlowNLO:
 	def f_update_NLO(self):
 		"""Updates f_D, f_nu. """
 
-		## flow_D
-		splines = self.f_D_spl
-		splines_w = self.f_D_spl_w
-
-		pder = np.array([spl.derivative()(self.p) for spl in splines]) #shape (Nw,Np)
-		pder = self.p[np.newaxis, :] * pder
-
-		wder = np.array([spl.derivative()(self.w) for spl in splines_w]) #shape (Np,Nw)
-		wder = self.w[np.newaxis, :] * wder
-
-		dim_flow_D  = self.eta_D  * self.f_D  + pder.T + (2 - self.eta_nu) * wder
-
-		## flow_nu
-		splines = self.f_nu_spl
-		splines_w = self.f_nu_spl_w
-
-		pder = np.array([spl.derivative()(self.p) for spl in splines])
-		pder = self.p[np.newaxis, :] * pder
-
-		wder = np.array([spl.derivative()(self.w) for spl in splines_w])
-		wder = self.w[np.newaxis, :] * wder
-
-		dim_flow_nu = self.eta_nu * self.f_nu + pder.T + (2 - self.eta_nu) * wder
-
-		## f update
-		self.f_D  -= self.ds * (self.Is_D  + dim_flow_D)
-		self.f_nu -= self.ds * (self.Is_nu + dim_flow_nu)
-
-
 	def Is_update(self):
 		"""Updates  self.Is_D and self.Is_nu """
 
