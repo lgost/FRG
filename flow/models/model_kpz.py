@@ -149,13 +149,27 @@ class ModelKPZ(ModelBase):
         rhs = g  * (self.dim - 2 - eta[0] + 3 * eta[1])
         return rhs
 
-    def Integral_upd(self, g, eta):
+    def Integral_upd_const_extrapol(self, g, eta):
+        """Sets I_nu(p=0) as I_nu(p1)."""
         Int = self.Integral_pfixed(g, eta)
         self.Integral = Int.copy()
+        ## Treat p=0 in I_nu:
         self.Integral[1, 1:, :] /= self.p[1:, np.newaxis] ** 2
         self.Integral[1, 0, :] = self.Integral[1, 1, :]
-        # print('Is_D=', self.Integral[0, 0, (0, 1, -1)])
-        # TODO quadratic extrapolation
+
+    def Integral_upd_quad_extrapol(self, g, eta):
+        """Continues I_nu(p=0) quadratically: I=a+b*p**2 (even function), I(0)=a."""
+        Int = self.Integral_pfixed(g, eta)
+        self.Integral = Int.copy()
+        ## Treat p=0 in I_nu:
+        self.Integral[1, 1:, :] /= self.p[1:, np.newaxis] ** 2
+        I1 = self.Integral[1, 1, :]
+        I2 = self.Integral[1, 2, :]
+        p1_2 = self.p[1, np.newaxis] ** 2
+        p2_2 = self.p[2, np.newaxis] ** 2
+        b = (I2 - I1) / (p2_2 - p1_2)
+        a = (I1+I2 - b*(p1_2+p2_2)) / 2
+        self.Integral[1, 0, :] = a
 
     def calc_upd(self):
         for i in range(self.n_f):

@@ -97,7 +97,6 @@ class Evolution:
     def write_files_params(self):
         param = np.concatenate([[self.s], self.eta, [self.g]])
         param.tofile(self.par_file)
-        # self.par_file.write('\n') - NB this is not needed TODO recheck
 
     def write_files_f(self):
         self.f.tofile(self.f_file)

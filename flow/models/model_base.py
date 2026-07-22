@@ -34,7 +34,8 @@ class ModelBase(ABC):
                  params_grid_external: flow_dataclasses.Params_grid_external,
                  params_grid_internal: flow_dataclasses.Params_grid_internal,
                  r, r_, coeff_nu: REAL,
-                 **kwargs # version_Ak: str # todo
+                 Integral_extrapol = 'lin'
+                 # **kwargs # version_Ak: str # todo
                  ):
         # Essentials: number of flowing functions (f's), approximation type and dimension
         self.n_f = n_f
@@ -50,6 +51,13 @@ class ModelBase(ABC):
             self.f_rhs_logder_calc = self.f_rhs_logder_calc_LO
         else:
             sys.exit('Wrong approximation')
+
+        if Integral_extrapol == 'const':
+            self.Integral_upd = self.Integral_upd_const_extrapol
+        elif Integral_extrapol == 'quad':
+            self.Integral_upd = self.Integral_upd_quad_extrapol
+        else:
+            raise ValueError('Integral_upd_extrapol must be either "lin" or "quad".')
 
         # Set up an internal (integration) grid and external grids
         self._init_grid_external(params_grid_external)
@@ -301,6 +309,13 @@ class ModelBase(ABC):
     def calc_upd(self):
         """Updates values needed in calculations (using updated splines)  """
 
-    @abstractmethod
-    def Integral_upd(self, g, eta):
-        """Calculates and updates integrals in the r.h.s. of f's flows. """
+    # @abstractmethod
+    # def Integral_upd(self, g, eta):
+    #     """Calculates and updates integrals in the r.h.s. of f's flows. """
+
+    def Integral_upd_const_extrapol(self, g, eta):
+        """Sets I_nu(p=0) as I_nu(p1)."""
+        pass
+    def Integral_upd_quad_extrapol(self, g, eta):
+        """Continues I_nu(p=0) quadratically."""
+        pass

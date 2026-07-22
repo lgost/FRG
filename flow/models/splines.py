@@ -1,7 +1,6 @@
 import numpy as np
 from scipy.interpolate import CubicSpline, RectBivariateSpline
 
-#todo numba
 def splines_pplusq(f:np.ndarray, Nw:int, p:np.ndarray,
                    p_max_plus_q:np.ndarray,
 				   p_max_plus_q_div_p_max:np.ndarray):
