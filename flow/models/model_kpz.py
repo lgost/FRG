@@ -1,5 +1,6 @@
 import numpy as np
 
+from .. import flow_dataclasses
 from .model_base import ModelBase
 from .maths_utils import *
 # from .maths_utils_numba import *
@@ -7,6 +8,28 @@ from .maths_utils import *
 from ..flow_types import *
 
 class ModelKPZ(ModelBase):
+    def __init__(self,
+                 n_f: int,
+                 approximation: str,
+                 dim: int,
+                 params_grid_external: flow_dataclasses.Params_grid_external,
+                 params_grid_internal: flow_dataclasses.Params_grid_internal,
+                 r, r_,
+                 Integral_extrapol='lin'
+                 ):
+        super().__init__(n_f,
+                           approximation,
+                           dim,
+                           params_grid_external,
+                           params_grid_internal,
+                           r, r_)
+
+        if Integral_extrapol == 'const':
+            self.Integral_upd_wrapper = self.Integral_upd_const_extrapol
+        elif Integral_extrapol == 'quad':
+            self.Integral_upd_wrapper = self.Integral_upd_quad_extrapol
+        else:
+            raise ValueError('Integral_upd_extrapol must be either "lin" or "quad".')
 
     ##########################################################################
     # Methods : calc
@@ -148,6 +171,10 @@ class ModelKPZ(ModelBase):
     def g_rhs_calc(self, g, eta):
         rhs = g  * (self.dim - 2 - eta[0] + 3 * eta[1])
         return rhs
+
+    def Integral_upd(self, g, eta):
+        """Calculates and updates integrals in the r.h.s. of f's flows. """
+        return self.Integral_upd_wrapper(g, eta)
 
     def Integral_upd_const_extrapol(self, g, eta):
         """Sets I_nu(p=0) as I_nu(p1)."""

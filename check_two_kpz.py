@@ -11,7 +11,7 @@ path_save = 'check_two_kpz'
 
 alpha = 2
 beta = 1
-coeff_nu = 1
+
 r  = lambda x : regulator.wett_alpha_beta(x, alpha, beta)
 r_ = lambda x : regulator.wett_alpha_beta_(x, alpha, beta)
 
@@ -23,7 +23,7 @@ params_grid_external=flow_dataclasses.Params_grid_external(N_p=N_p, p_min=p_min,
                                                            N_w=N_w, w_min=w_min, w_max=w_max)
 params_grid_internal=flow_dataclasses.Params_grid_internal(deg_q, q_max, degtheta)
 
-model_params = n_f, approximation, dim, params_grid_external, params_grid_internal, r, r_, coeff_nu
+model_params = n_f, approximation, dim, params_grid_external, params_grid_internal, r, r_
 
 g_in = 1.
 etas_in = np.array([0., 0.])

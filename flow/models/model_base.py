@@ -33,8 +33,7 @@ class ModelBase(ABC):
                  dim: int,
                  params_grid_external: flow_dataclasses.Params_grid_external,
                  params_grid_internal: flow_dataclasses.Params_grid_internal,
-                 r, r_, coeff_nu: REAL,
-                 Integral_extrapol = 'lin'
+                 r, r_ # coeff_nu: REAL,#todo
                  # **kwargs # version_Ak: str # todo
                  ):
         # Essentials: number of flowing functions (f's), approximation type and dimension
@@ -52,19 +51,12 @@ class ModelBase(ABC):
         else:
             sys.exit('Wrong approximation')
 
-        if Integral_extrapol == 'const':
-            self.Integral_upd = self.Integral_upd_const_extrapol
-        elif Integral_extrapol == 'quad':
-            self.Integral_upd = self.Integral_upd_quad_extrapol
-        else:
-            raise ValueError('Integral_upd_extrapol must be either "lin" or "quad".')
-
         # Set up an internal (integration) grid and external grids
         self._init_grid_external(params_grid_external)
         self._init_grid_internal(params_grid_internal)
 
         # Choose the regulator
-        self._init_regulator(r, r_, coeff_nu)
+        self._init_regulator(r, r_)
 
         # Define quantities used in the calculations
         self._init_calc()
@@ -153,12 +145,11 @@ class ModelBase(ABC):
         else:
             sys.exit('dim < 1')
 
-    def _init_regulator(self, r, r_, coeff_nu):
+    def _init_regulator(self, r, r_):
         """ Regulator function (let it be of same form for all functions, if there are several ones). """
 
         self.r = r
         self.r_ = r_
-        self.coeff_nu = coeff_nu
 
     def _init_calc(self):
         """Initializes auxiliary values, frequently used in calculations."""
@@ -309,13 +300,6 @@ class ModelBase(ABC):
     def calc_upd(self):
         """Updates values needed in calculations (using updated splines)  """
 
-    # @abstractmethod
-    # def Integral_upd(self, g, eta):
-    #     """Calculates and updates integrals in the r.h.s. of f's flows. """
-
-    def Integral_upd_const_extrapol(self, g, eta):
-        """Sets I_nu(p=0) as I_nu(p1)."""
-        pass
-    def Integral_upd_quad_extrapol(self, g, eta):
-        """Continues I_nu(p=0) quadratically."""
-        pass
+    @abstractmethod
+    def Integral_upd(self, g, eta):
+        """Calculates and updates integrals in the r.h.s. of f's flows. """
