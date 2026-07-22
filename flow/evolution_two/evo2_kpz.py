@@ -5,13 +5,6 @@ from .evolution_two_base import EvolutionTwoBase
 
 
 class Evo2KPZ(EvolutionTwoBase):
-    # def __init__(self,
-    #              evo: Evolution,
-    #              **params_two
-    #              ):
-    #
-    #     super().__init__(evo, **params_two)
-    #     #todo delete
 
     def update_IC_two(self):
         '''Update dimensionful correlation function.'''

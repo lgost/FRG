@@ -199,7 +199,6 @@ class EvolutionTwoBase(ABC):
         return b_avg ##shape=(n_f,)
 
     def update_f_IC_two(self):
-        ip_two = self.js_exit
         kappa = np.exp(self.evo.s)  ## *Lambda, Lambda = 1 in the code
         ipe = self.ip_exit
 
@@ -225,7 +224,7 @@ class EvolutionTwoBase(ABC):
                 self.f_IC_two[i, where_big] = self.X_dimful[i] * f_exit_cont
 
     def dimful_update(self):
-        '''Update dimensionful parameters.'''
+        '''Update dimensionful parameters X.'''
 
         ## -ds*(-eta) = + ds*eta
         self.X_dimful += self.evo.ds * self.evo.eta * self.X_dimful

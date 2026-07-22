@@ -5,7 +5,7 @@ import os
 import time
 
 def main():
-    path_save = 'two4e_justId_om_C1_1D'
+    path_save = 'two4e_justId_om_C1_1D_try'
     #s         eta_D      eta_nu     g        D_dimfull  nu_dimfull  js_exit
     #0.000     0.10308    0.10308    1.001    1.00010    1.00010     0
     #-0.001    0.10315    0.10315    1.002    1.00021    1.00021     0
@@ -33,14 +33,14 @@ def main():
     # f_nu_in[:,0] = p**2
 
     dim = 1
-    #
+
     # s_fin = -3*ds
     # n_sample_print = 1
     # n_sample_save = 1
 
-    s_fin = -ds-1.40974598
-    n_sample_print = 100
-    n_sample_save = 100
+    # s_fin = -ds-1.40974598
+    # n_sample_print = 100
+    # n_sample_save = 100
 
     alpha = 2
     beta = 1

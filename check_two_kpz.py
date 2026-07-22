@@ -40,7 +40,7 @@ evo_params = IC, ds, path_save
 
 ### evo2 ###
 X_dimful_in = np.array([1.,1.])
-enslave_w_to_p_two = True #False
+match_w_to_p_two = True #False
 p_exit = q_max
 Np_two = 10
 p_min_two, p_max_two = 1, p_exit
@@ -49,7 +49,7 @@ scale = 'log'
 
 evo_two_params = dict(
     X_dimful_in = X_dimful_in,
-    enslave_w_to_p_two = enslave_w_to_p_two,
+    match_w_to_p_two = match_w_to_p_two,
     p_exit = p_exit,
     Np_two = Np_two,
     p_min_two = p_min_two, p_max_two = p_max_two,
@@ -61,10 +61,15 @@ evo_two_params = dict(
 
 flow = create.create('KPZ', model_params,'evo2', evo_params, evo_two_params)
 
-s_fin= -ds #-1.40974598-1*ds
+s_fin= -1.40974598-1*ds
 n_print=100
 n_save_params=100
 n_save_f=100
+
+# s_fin= -3*ds
+# n_print=1
+# n_save_params=1
+# n_save_f=1
 
 start = perf_counter()
 flow.rg_evolution(s_fin, n_print, n_save_params, n_save_f)
