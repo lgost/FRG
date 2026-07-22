@@ -7,7 +7,7 @@ n_f=2
 approximation = "NLO"
 dim=1
 
-path_save = 'check_two_kpz'
+path_save = 'check_two_full_kpz'
 
 alpha = 2
 beta = 1
@@ -56,7 +56,8 @@ evo_two_params = dict(
     Nw_two = Nw_two,
     w_min_two = w_min_two, w_max_two = w_max_two,
     scale = scale,
-    s_fin_all_exited = True
+    s_fin_all_exited = True,
+    step_two_action = 'full',  deg_omega = 500, omega_max = w_max ## Record I_dimful
 )
 
 flow = create.create('KPZ', model_params,'evo2', evo_params, evo_two_params)

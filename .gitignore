@@ -6,3 +6,7 @@
 
 # Dont ignore .gitignore
 !/.gitignore
+
+checks/kpz/launch_flow6_LO.py
+checks/kpz/launch_two4e_justId_om_C1.py
+checks/__init__.py

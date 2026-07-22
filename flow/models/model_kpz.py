@@ -8,21 +8,23 @@ from .maths_utils import *
 from ..flow_types import *
 
 class ModelKPZ(ModelBase):
-    def __init__(self,
-                 n_f: int,
-                 approximation: str,
-                 dim: int,
-                 params_grid_external: flow_dataclasses.Params_grid_external,
-                 params_grid_internal: flow_dataclasses.Params_grid_internal,
-                 r, r_,
-                 Integral_extrapol='const'
-                 ):
-        super().__init__(n_f,
-                           approximation,
-                           dim,
-                           params_grid_external,
-                           params_grid_internal,
-                           r, r_)
+    def __init__(
+        self,
+        n_f: int,
+        approximation: str,
+        dim: int,
+        params_grid_external: flow_dataclasses.Params_grid_external,
+        params_grid_internal: flow_dataclasses.Params_grid_internal,
+        r, r_,
+        Integral_extrapol='const'):
+
+        super().__init__(
+            n_f,
+            approximation,
+            dim,
+            params_grid_external,
+            params_grid_internal,
+            r, r_)
 
         if Integral_extrapol == 'const':
             self.Integral_upd_wrapper = self.Integral_upd_const_extrapol

@@ -36,11 +36,11 @@ class ModelBase(ABC):
                  r, r_ # coeff_nu: REAL,#todo
                  # **kwargs # version_Ak: str # todo
                  ):
-        # Essentials: number of flowing functions (f's), approximation type and dimension
+
+        ## Essentials: number of flowing functions (f's), approximation type and dimension
         self.n_f = n_f
         self.approximation = approximation
         self.dim = dim
-        # self.version_Ak = version_Ak
 
         if self.approximation == "NLO":
             self.Integral_pfixed = self.Integral_pfixed_dD_NLO
@@ -51,17 +51,17 @@ class ModelBase(ABC):
         else:
             sys.exit('Wrong approximation')
 
-        # Set up an internal (integration) grid and external grids
+        ## Set up an internal (integration) grid and external grids
         self._init_grid_external(params_grid_external)
         self._init_grid_internal(params_grid_internal)
 
-        # Choose the regulator
+        ## Choose the regulator
         self._init_regulator(r, r_)
 
-        # Define quantities used in the calculations
+        ## Define quantities used in the calculations
         self._init_calc()
 
-        # Print the init parameters
+        ## Print the init parameters
         self.print_class_vars()
 
     ##########################################################################

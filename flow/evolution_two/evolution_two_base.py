@@ -2,6 +2,7 @@ import numpy as np
 from typing import Any
 from abc import ABC, abstractmethod
 
+from .. import flow_dataclasses
 from ..flow_types import REAL
 from ..evolution import Evolution
 
@@ -27,6 +28,7 @@ class EvolutionTwoBase(ABC):
         X_dimful_in = params_two.get('X_dimful_in')
         scale = params_two.get('scale', 'log')
         s_fin_all_exited = params_two.get('s_fin_all_exited', False)
+        step_two_action = params_two.get('step_two_action', 'only_record_IC')
 
         ## 1) Initialize the second (p,w)-grid
         self._init_second_grid(Np_two, p_min_two, p_max_two,
@@ -46,7 +48,21 @@ class EvolutionTwoBase(ABC):
         ## 5) Auxiliary values for calculations
         self._init_calc()
 
-        ## 6) How to save the flowing values
+        ## 6) Decide if we only record the initial condition at the exit
+        # from the dimensionless grid, or make an action after that;
+        # for example, record the integral for the large-p equation's rhs.
+        self.step_two_action = step_two_action
+        if step_two_action == "only_record_IC":
+            self.step_two = self.step_two_record_IC
+        elif step_two_action == "full":
+            self.step_two = self.step_two_full
+            deg_omega = params_two.get('deg_omega')
+            omega_max = params_two.get('omega_max')
+            self._init_evo2_calc(deg_omega,omega_max)
+        else:
+            raise ValueError("step_two_action must be either 'only_record_IC' or 'full'.")
+
+        ## 7) How to save the flowing values
         self._init_save(self.path)
 
         # Print the init parameters
@@ -91,9 +107,9 @@ class EvolutionTwoBase(ABC):
         self.kappa_exit = self.p_two / self.p_exit
         self.s_exit = np.log(self.kappa_exit)  # s<0
 
-        s_exit_file = open(self.path + '/s_exit.dat', 'w+')
-        np.savetxt(s_exit_file, self.s_exit, delimiter=' ', newline=' ')
-        s_exit_file.close()
+        # s_exit_file = open(self.path + '/s_exit.dat', 'w+')
+        # np.savetxt(s_exit_file, self.s_exit, delimiter=' ', newline=' ')
+        # s_exit_file.close()
 
         self.js_exit = self.s_exit.size - 1
         self.all_exited = False
@@ -116,6 +132,33 @@ class EvolutionTwoBase(ABC):
 
     def _init_save(self, path):
         self.exit_par_file = open(path + '/exit_parameters.bin', 'wb+')
+        if self.step_two_action == 'full':
+            self.I_dimful_file = open(path + '/I_dimful.bin', 'wb+')
+            self.I_inner_file = open(path + '/I_inner.dat', 'w+')
+
+    def _init_evo2_calc(self, deg_omega,omega_max):
+
+        ## Internal omega-grid (only half-space omega>0)
+        self.omega_max = omega_max
+        self.degomega = deg_omega
+        x, w = np.polynomial.legendre.leggauss(self.degomega)
+        self.omega = self.omega_max / 2 * (1 + x)
+        self.womega = self.omega_max / 2 * w
+        if self.evo.model.w_max < self.omega_max:
+            raise ValueError("w_max < omega_max")
+
+        ## Broadcast to (q,theta,omega):
+        self.omega_qto = self.omega[None,None,:]
+        self.q_qto = self.evo.model.q[:, None, None]
+        self.q2_qto = self.evo.model.q2[:, None, None]
+        self.rq_qto = self.evo.model.r(self.q_qto)
+        self.rq__qto = self.evo.model.r_(self.q_qto)
+        if self.evo.dim == 1:
+            self.sin_d2_qto = 1
+        else:
+            self.sin_d2_qto = np.sin(self.evo.model.theta)**(self.evo.dim-2)
+            self.sin_d2_qto = self.sin_d2_qto[None,:,None]
+
 
     ##########################################################################
     # Methods : print, save
@@ -164,6 +207,9 @@ class EvolutionTwoBase(ABC):
 
     def close_files(self):
         self.exit_par_file.close()
+        if self.step_two_action == "full":
+            self.I_dimful_file.close()
+            self.I_inner_file.close()
 
     def write_files_two(self):
         ## Overwrite the file with the updated array
@@ -239,7 +285,7 @@ class EvolutionTwoBase(ABC):
     # Methods : RG evolution
     ##########################################################################
 
-    def step_two(self):
+    def step_two_record_IC(self):
         self.dimful_update()
         if not self.all_exited:
             if self.evo.s <= self.s_exit[self.js_exit]:
@@ -250,6 +296,36 @@ class EvolutionTwoBase(ABC):
                 if self.js_exit < 0:
                     self.all_exited = True
                     print('All exited.')
+
+    def step_two_full(self):
+        self.step_two_record_IC()
+        self.evolution_two_action()
+
+    def evolution_two_action(self):  #RG_evolution_two(Kappa, all_exited):
+        """Calculates and saves I_dimful (aka diffusion coefficient),
+        which is used in the rhs of large-p equation in another algorithm.
+        It is of the form [0,0,...,(i=js_exit + 1)value,...,(i=Np_two-1)value].
+        """
+
+        I_inner = self.calc_I_inner()
+        if (self.js_exit + 1 < self.Np_two):  ## <=> if at least one IC was recorded.
+            I_dimful = np.zeros(self.Np_two)
+            for ip_two in range(self.js_exit + 1, self.Np_two):
+                I_dimful[ip_two] = self.calc_I_dimful(ip_two, I_inner)
+                # print('evolution_two_action. ip_two: ', ip_two, 'I_dimful:', I_dimful[ip_two])
+
+            I_dimful.tofile(self.I_dimful_file)
+
+    @abstractmethod
+    def calc_I_inner(self) -> REAL:
+        """Dimensionless part of I_dimful, independent of p_two."""
+        pass
+
+    @abstractmethod
+    def calc_I_dimful(self, ip_two:int, I_inner:REAL) -> np.ndarray:
+        """Calculates I_dimful (aka diffusion coefficient in the rhs
+        of large-p equation) at the given ip_two."""
+        pass
 
     def rg_evolution(self, s_fin: REAL, n_print: int, n_save_params: int, n_save_f: int):
         """Integration of the flow equations with simple Euler step.
