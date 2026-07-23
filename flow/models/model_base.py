@@ -1,5 +1,4 @@
-import sys
-from abc import ABC, abstractmethod#, abstractproperty
+from abc import ABC, abstractmethod
 
 from .. import flow_dataclasses
 from . import grids, splines
@@ -9,18 +8,84 @@ from ..flow_types import *
 
 class ModelBase(ABC):
     """
-    Base class for Model classes, that define a physical model.
-    n_f : int
-		how many flowing functions f are there in the model
+    Base class for Model classes, that define a physical model and the
+    approximation for the FRG equation. It contains methods for calculation
+    of rhs of flow equations (which define the model, they are anstract, to
+    be implemented in child classes),
+    as well as computational details: regulators, grids, and auxiliary
+    attributes frequently used in calculations (not fully listed in Attributes below).
+
+    Attributes
+    ----------
+    n_f: int
+		How many flowing functions f (and corresponding exponents) are there in the model.
 	approximation : str
-		"NLO" or "LO".
-		In "NLO", functions of external moments and frequency are calculated,
-		in "LO" the frequency array is set to [0].
-	dim : int
-		space dimension >=1
-	# version_Ak : str
-	# 	"1" or "DkoverDLambda" - defines adimensionalisation of f_nu. # TODO implement
-   ...TODO docs
+		Accepts "NLO" or "LO". In "NLO", functions of external moments and frequency
+		are calculated, in "LO" the frequency array is set to [0].
+	dim: int
+		Space dimension >=1.
+	p_min: REAL
+        Lower limit of the external dimensionless momentum grid p; if the grid is log-scale,
+        the first 0 element is added to p, and p_min is the second one.
+    p_max: REAL
+        Upper limit of the external dimensionless momentum grid p.
+    Np: int
+        Number of points in the external dimensionless momentum grid p.
+    p: np.ndarray
+        External dimensionless momentum grid.
+    w_min: REAL
+        Lower limit of the external dimensionless frequency grid w; if the grid is log-scale,
+        the first 0 element is added to w, and w_min is the second one.
+    w_max: REAL
+        Upper limit of the external dimensionless frequency grid w.
+    Nw: int
+        Number of points in the external dimensionless frequency grid w.
+    w: np.ndarray
+        External dimensionless frequency grid.
+    grid_scale: stg
+        Scale of p and w grids. Accepts 'log' only.
+    external_grid_shape: tuple
+        (Np, Nw)
+    q_max: REAL
+        Upper limit of the internal dimensionless momentum grid q. Chosen as
+        q at which the regulator r(q) is negligible (q=4 for Wetterich regulator).
+        Lower limit is always 0.
+    degq: int
+        Number of points in the internal dimensionless momentum grid q.
+    q: np.ndarray
+        Internal dimensionless momentum grid for Gauss-Legendre integration.
+    wq: np.ndarray
+        Gauss-Legendre weights corresponding to q-grid.
+    theta_max: REAL
+        Upper limit of the internal angular grid theta, normally = pi.
+        Lower limit is always 0.
+    degtheta: int
+        Number of points in the internal angular grid theta. Ignored in 1D.
+    theta: np.ndarray
+        Internal angular grid for Gauss-Legendre integration. In 1D is set to [0, pi].
+    wtheta: np.ndarray
+        Gauss-Legendre weights corresponding to theta-grid. In 1D is set to [1, 1].
+    vdim: REAL
+        Dimension-dependent constant which appears in front of integrals in eta_calc,
+        see Kloss2012 (95): v_d = (2**(d-1) * pi**(d/2) * Gamma(d/2))**(-1).
+    vdim1: REAL
+        Dimension-dependent constant which appears in front of integrals,
+        see Kloss2012 (A2): v_{d-1}.
+    Jdim1: REAL
+        Jacobian = q**(dim-1), see Kloss2012 (A2).
+    Integral: np.ndarray
+        Array of shape (n_f, *external_grid_shape) representing values
+        on (p,w) grid of integrals that enter the rhs of flow equations
+        for f's.
+    f_spl: np.ndarray
+        Array of shape (n_f, Nw) containing splines of f's over p at each w.
+    f_spl_w: np.ndarray
+        Array of shape (n_f, Np) containing splines of f's over w at each p,
+        created if approximation is "NLO".
+    rq: np.ndarray
+        Array of regulator values on q-grid.
+    rq_: np.ndarray
+        Array of regulator's derivative values on q-grid.
     """
 
     n_f: int
@@ -31,11 +96,30 @@ class ModelBase(ABC):
                  n_f: int,
                  approximation: str,
                  dim: int,
-                 params_grid_external: flow_dataclasses.Params_grid_external,
-                 params_grid_internal: flow_dataclasses.Params_grid_internal,
-                 r, r_ # coeff_nu: REAL,#todo
-                 # **kwargs # version_Ak: str # todo
+                 params_grid_external: flow_dataclasses.ParamsGridExternal,
+                 params_grid_internal: flow_dataclasses.ParamsGridInternal,
+                 r, r_
                  ):
+        """
+
+        Parameters
+        ----------
+        n_f: int
+            How many flowing functions f (and corresponding exponents) are there in the model.
+        approximation: str
+            Accepts "NLO" or "LO". In "NLO", functions of external moments and frequency
+            are calculated, in "LO" the frequency array is set to [0].
+        dim: int
+		    Space dimension >=1.
+        params_grid_external: ParamsGridExternal
+            Parameters of external p, w grids on which functions' values are calculated.
+        params_grid_internal: ParamsGridInternal
+            Parameters of integration q, theta grids.
+        r: callable
+            Regulator (written as a function of q, not q^2).
+        r_: callable
+            Derivative of the regulator over hat q^2 (written as a function of q, not q^2).
+        """
 
         ## Essentials: number of flowing functions (f's), approximation type and dimension
         self.n_f = n_f
@@ -49,7 +133,7 @@ class ModelBase(ABC):
             self.Integral_pfixed = self.Integral_pfixed_dD_LO
             self.f_rhs_logder_calc = self.f_rhs_logder_calc_LO
         else:
-            sys.exit('Wrong approximation')
+            raise ValueError('Wrong approximation')
 
         ## Set up an internal (integration) grid and external grids
         self._init_grid_external(params_grid_external)
@@ -62,13 +146,13 @@ class ModelBase(ABC):
         self._init_calc()
 
         ## Print the init parameters
-        self.print_class_vars()
+        self.print_class_attributes()
 
     ##########################################################################
     # Methods : init
     ##########################################################################
 
-    def _init_grid_external(self, par : flow_dataclasses.Params_grid_external):
+    def _init_grid_external(self, par: flow_dataclasses.ParamsGridExternal):
         """Sets up the external p-grid (p = |vector_p|)
         and, in NLO, the external frequency grid (w>0, f's are Real);
         only log-scale grids are supported.
@@ -81,7 +165,7 @@ class ModelBase(ABC):
         if self.grid_scale == 'log':
             self.p = grids.grid_log0(self.p_min, self.p_max, self.Np)
         else:
-            sys.exit('Wrong grid scale')
+            raise ValueError('Wrong grid scale.')
 
         self.Nw = 1
         self.w = np.array([0])
@@ -93,17 +177,17 @@ class ModelBase(ABC):
             if self.grid_scale == 'log':
                 self.w = grids.grid_log0(self.w_min, self.w_max, self.Nw)
             else:
-                sys.exit('Wrong grid scale')
+                raise ValueError('Wrong grid scale.')
 
         self.external_grid_shape = (self.Np, self.Nw)
 
-    def _init_grid_internal(self, par: flow_dataclasses.Params_grid_internal):
+    def _init_grid_internal(self, par: flow_dataclasses.ParamsGridInternal):
         """Sets up the internal grids for integration using Gauss-Legendre method.
 
         q-grid (q = |vector_q|) - to integrate over radial coordinate,
         theta-grid (normally [0..pi]) - to integrate over angle.
         In d=1, theta-grid is trivial.
-        Also sets up the prefactors: Jdim, Jdim1, vdim, vdim1.
+        Also sets up the prefactors: vdim, vdim1, Jdim1.
         """
 
         self.q_max = par.q_max
@@ -114,7 +198,7 @@ class ModelBase(ABC):
 
         ## Jacobian
         self.vdim = np.power(2., 1 - self.dim) * np.power(np.pi, -self.dim / 2) / gammafunction(self.dim / 2)
-        self.Jdim = self.vdim * np.power(self.q, self.dim - 1)  # for intergation over q=|q|.
+        # self.Jdim = self.vdim * np.power(self.q, self.dim - 1)  # for integration over q=|q|.
 
         if self.dim > 1:
             ## Internal theta-grid
@@ -126,8 +210,8 @@ class ModelBase(ABC):
 
             ## Jacobian
             self.vdim1 = np.power(2., 2 - self.dim) * np.power(np.pi, -(self.dim - 1) / 2) / gammafunction(
-                (self.dim - 1) / 2) #v_(d-1) in Kloss2012
-            self.Jdim1 = np.power(self.q, self.dim - 1)  # Kloss2012 (A2)
+                (self.dim - 1) / 2)  ## v_(d-1) in Kloss2012
+            self.Jdim1 = np.power(self.q, self.dim - 1)  ## Kloss2012 (A2)
 
         elif self.dim == 1:
             # Internal theta-grid is trivial
@@ -143,7 +227,7 @@ class ModelBase(ABC):
             print('1D: vdim1 =', self.vdim1, 'Jdim1 =', self.Jdim1)
 
         else:
-            sys.exit('dim < 1')
+            raise ValueError('dim < 1.')
 
     def _init_regulator(self, r, r_):
         """ Regulator function (let it be of same form for all functions, if there are several ones). """
@@ -162,7 +246,7 @@ class ModelBase(ABC):
             self.f_spline_upd = self.f_spline_upd_LO
         elif self.approximation == "NLO":
             ## Splines in w
-            self.f_spl_w = np.zeros((self.n_f, self.Np), dtype=object) #Splines in w
+            self.f_spl_w = np.zeros((self.n_f, self.Np), dtype=object)
             self.f_spline_upd = self.f_spline_upd_NLO
 
         ## For spline
@@ -213,9 +297,8 @@ class ModelBase(ABC):
         ## f's derivative at w=0 on q-grid:
         self.fq_ = np.zeros((self.n_f, self.degq))
 
-
-    def print_class_vars(self):
-        print("=== Model is has the following parameters: ===")
+    def print_class_attributes(self):
+        print("=== Model has the following attributes: ===")
         excluded = [
             "fq", "fQ", "q2", "qd1", "qd3", "qd5",
             "r", "r_", "p_max_plus_q", "p_max_plus_q_div_p_max",
@@ -236,26 +319,25 @@ class ModelBase(ABC):
                     print(f"{key}={value}")
         print("==================================================")
 
-##########################################################################
-# Methods : calc
-##########################################################################
+    ##########################################################################
+    # Methods : calc
+    ##########################################################################
 
-    def f_spline_upd_LO(self, f:np.ndarray):
+    def f_spline_upd_LO(self, f: np.ndarray):
         """Updates splines of f's in p """
 
         for i in range(self.n_f):
-            self.f_spl[i,:] = splines.splines_pplusq(f[i, :, :],
-                                                     self.Nw, self.p,
-                                                     self.p_max_plus_q, self.p_max_plus_q_div_p_max)
+            self.f_spl[i, :] = splines.splines_pplusq(f[i, :, :],
+                                                      self.Nw, self.p,
+                                                      self.p_max_plus_q, self.p_max_plus_q_div_p_max)
 
-    def f_spline_upd_NLO(self, f:np.ndarray):
+    def f_spline_upd_NLO(self, f: np.ndarray):
         """Updates splines of f's in p and w """
 
         self.f_spline_upd_LO(f)
 
         for i in range(self.n_f):
-            self.f_spl_w[i,:] = splines.splines(f[i, :, :],
-                                                self.Np, self.w)
+            self.f_spl_w[i, :] = splines.splines(f[i, :, :], self.Np, self.w)
 
     @abstractmethod
     def Integral_pfixed_dD_LO(self, g, eta):
@@ -281,9 +363,9 @@ class ModelBase(ABC):
     def f_rhs_logder_calc_NLO(self, eta):
         """Calculates r.h.s. of f's in NLO."""
 
-    def f_rhs_calc(self, eta,f):
+    def f_rhs_calc(self, eta, f):
         eta_f = f.copy()
-        eta_f *= eta[:,None,None]
+        eta_f *= eta[:, None, None]
         dim_flow = eta_f + self.f_rhs_logder_calc(eta)
         return dim_flow + self.Integral
 

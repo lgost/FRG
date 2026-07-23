@@ -7,17 +7,29 @@ from .maths_utils import *
 # from .maths_utils_jax import *
 from ..flow_types import *
 
-class ModelKPZ(ModelBase):
-    def __init__(
-        self,
-        n_f: int,
-        approximation: str,
-        dim: int,
-        params_grid_external: flow_dataclasses.Params_grid_external,
-        params_grid_internal: flow_dataclasses.Params_grid_internal,
-        r, r_,
-        Integral_extrapol='const'):
 
+class ModelKPZ(ModelBase):
+    """Kardar–Parisi–Zhang model, in NLO or LO approximation.
+    A simplification is made wrt Kloss2012: f_lambda=1 in any dimension, even in NLO.
+    """
+
+    def __init__(
+            self,
+            n_f: int,
+            approximation: str,
+            dim: int,
+            params_grid_external: flow_dataclasses.ParamsGridExternal,
+            params_grid_internal: flow_dataclasses.ParamsGridInternal,
+            r, r_,
+            Integral_extrapol='const'):
+        """
+
+        Parameters
+        ----------
+        Integral_extrapol: str
+            Accepts  "const" or "quad": defines if I_nu at p=0 is calculated
+            as I_nu(p[1]) or as a assuming I_nu(p)=a+b*p**2.
+        """
         super().__init__(
             n_f,
             approximation,
@@ -51,8 +63,8 @@ class ModelKPZ(ModelBase):
         rq_ = self.rq__broad
 
         ## f_D(w=0,q) = fq[0] ,  f_nu(w=0,q) = fq[1]
-        f_Dq = self.fq[0, np.newaxis, np.newaxis, :, np.newaxis]
-        f_nuq = self.fq[1, np.newaxis, np.newaxis, :, np.newaxis]
+        f_Dq = self.fq[0, None, None, :, None]
+        f_nuq = self.fq[1, None, None, :, None]
 
         kq = f_Dq + rq
         lq = q2 * (f_nuq + rq)
@@ -70,7 +82,7 @@ class ModelKPZ(ModelBase):
         fl = f_lambdaq * lQ + f_lambdaQ * lq
 
         denom_a = 2 * lq * lQ * fl ** 2
-        A3a = (fl) / denom_a
+        A3a = fl / denom_a
 
         denom_c = denom_a ** 2 * lq / lQ
         fl2 = fl + f_lambdaQ * lq
@@ -78,20 +90,21 @@ class ModelKPZ(ModelBase):
 
         gq = self.Jdim1
 
-        Fpwqt = sin_d2 * (q2+pqcos)**2 * kQ * (A3a*dsR_D - A3c*dsR_nu * 2*q2*lq*kq)
-        I_D = 2 * g * f_lambda_p**2 * self.vdim1 / (2*np.pi) * GaussLegendre2D_NLO(self.wq, self.wtheta, gq, Fpwqt)
+        Fpwqt = sin_d2 * (q2 + pqcos) ** 2 * kQ * (A3a * dsR_D - A3c * dsR_nu * 2 * q2 * lq * kq)
+        I_D = 2 * g * f_lambda_p ** 2 * self.vdim1 / (2 * np.pi) * GaussLegendre2D_NLO(self.wq, self.wtheta, gq, Fpwqt)
         denom_d = denom_c * f_lambdaq / lq ** 2
         A3d = fl ** 2 * lQ / denom_d  # kloss2012_omega_integration.nb
 
         Fpwqt = sin_d2 * (q2 + pqcos) * (-pqcos * f_lambdaQ * lQ * A3a * dsR_D + (
-                    2 * pqcos * f_lambdaQ * lQ * lq * kq * A3c + (p2 + pqcos) * f_lambdaq * kQ * (
-                        f_lambdaq ** 2 * A3d - lq ** 2 * A3c)) * q2 * dsR_nu)
-        I_nu = - 2 * g * f_lambda_p * self.vdim1 / (2 * np.pi) * GaussLegendre2D_NLO(self.wq, self.wtheta, gq, Fpwqt)  # / (p**2) outside
+                2 * pqcos * f_lambdaQ * lQ * lq * kq * A3c + (p2 + pqcos) * f_lambdaq * kQ * (
+                f_lambdaq ** 2 * A3d - lq ** 2 * A3c)) * q2 * dsR_nu)
+        I_nu = - 2 * g * f_lambda_p * self.vdim1 / (2 * np.pi) * GaussLegendre2D_NLO(self.wq, self.wtheta, gq,
+                                                                                     Fpwqt)  # / (p**2) outside
 
         return np.array([I_D, I_nu])
 
     def Integral_pfixed_dD_NLO(self, g, eta):
-        # (Np, Nw,  degq, degtheta)
+        ## (Np, Nw,  degq, degtheta)
         p2 = self.p_broad2
         w = self.w_broad
         q2 = self.q_broad2
@@ -106,8 +119,8 @@ class ModelKPZ(ModelBase):
         rq_ = self.rq__broad
 
         ## f_D(w=0,q) = fq[0] ,  f_nu(w=0,q) = fq[1]
-        f_Dq = self.fq[0,np.newaxis,np.newaxis,:,np.newaxis]
-        f_nuq = self.fq[1, np.newaxis, np.newaxis, :, np.newaxis]
+        f_Dq = self.fq[0, None, None, :, None]
+        f_nuq = self.fq[1, None, None, :, None]
 
         kq = f_Dq + rq
         lq = q2 * (f_nuq + rq)
@@ -118,15 +131,15 @@ class ModelKPZ(ModelBase):
         dsR_D = - eta[0] * rq - 2 * q2 * rq_
         dsR_nu = - eta[1] * rq - 2 * q2 * rq_
 
-        f_lambdaq = 1#np.ones_like(q2)
-        f_lambdaQ = 1#np.ones_like(Q2)
+        f_lambdaq = 1  ## np.ones_like(q2)
+        f_lambdaQ = 1  ## np.ones_like(Q2)
         f_lambda_p = 1
 
         fl = f_lambdaq * lQ + f_lambdaQ * lq
 
         wff2 = (w * f_lambdaq * f_lambdaQ) ** 2
         denom_a = 2 * lq * lQ * (fl ** 2 + wff2)
-        A3a = (fl) / denom_a
+        A3a = fl / denom_a
 
         denom_c = denom_a ** 2 * lq / lQ
         fl2 = fl + f_lambdaQ * lq
@@ -141,9 +154,10 @@ class ModelKPZ(ModelBase):
         A3d = (fl ** 2 * lQ + (w * f_lambdaQ) ** 2 * fl2 * f_lambdaq) / denom_d  # kloss2012_omega_integration.nb
 
         Fpwqt = sin_d2 * (q2 + pqcos) * (-pqcos * f_lambdaQ * lQ * A3a * dsR_D + (
-                    2 * pqcos * f_lambdaQ * lQ * lq * kq * A3c + (p2 + pqcos) * f_lambdaq * kQ * (
-                        f_lambdaq ** 2 * A3d - lq ** 2 * A3c)) * q2 * dsR_nu)
-        I_nu = - 2 * g * f_lambda_p * self.vdim1 / (2 * np.pi) * GaussLegendre2D_NLO(self.wq, self.wtheta, gq, Fpwqt)  # / (p**2) outside
+                2 * pqcos * f_lambdaQ * lQ * lq * kq * A3c + (p2 + pqcos) * f_lambdaq * kQ * (
+                f_lambdaq ** 2 * A3d - lq ** 2 * A3c)) * q2 * dsR_nu)
+        I_nu = - 2 * g * f_lambda_p * self.vdim1 / (2 * np.pi) * GaussLegendre2D_NLO(self.wq, self.wtheta, gq,
+                                                                                     Fpwqt)  # / (p**2) outside
 
         return np.array([I_D, I_nu])
 
@@ -155,14 +169,13 @@ class ModelKPZ(ModelBase):
         rhs_wder = np.zeros((self.n_f, *self.external_grid_shape))
 
         for i in range(self.n_f):
-            wder = np.array([spl.derivative()(self.w) for spl in self.f_spl_w[i]])  # shape (Np,Nw)
-            wder = self.w[np.newaxis, :] * wder
+            wder = np.array([spl.derivative()(self.w) for spl in self.f_spl_w[i]]) ## shape (Np,Nw)
+            wder = self.w[None, :] * wder
             rhs_wder[i] = wder
 
-        rhs_wder *= 2 - eta[1] ## dimension of w
+        rhs_wder *= 2 - eta[1]  ## dimension of w
 
         return rhs_pder + rhs_wder
-
 
     def eta_calc(self, g):
         ## Powers of q
@@ -177,11 +190,11 @@ class ModelKPZ(ModelBase):
 
         f_D_derq = self.fq_[0]
         f_nu_derq = self.fq_[1]
-        f_lambda_derq = 0 #f_lambda=1, d1/dq=0
+        f_lambda_derq = 0  # f_lambda=1, d1/dq=0
 
         k = f_Dq + self.rq
         l = q2 * (f_nuq + self.rq)
-        f = 1   ## f_lambda
+        f = 1  ## f_lambda
         fl3 = f * l ** 3
         fl4 = fl3 * l
 
@@ -220,7 +233,7 @@ class ModelKPZ(ModelBase):
         return np.array([etaD, etaNu])
 
     def g_rhs_calc(self, g, eta):
-        rhs = g  * (self.dim - 2 - eta[0] + 3 * eta[1])
+        rhs = g * (self.dim - 2 - eta[0] + 3 * eta[1])
         return rhs
 
     def Integral_upd(self, g, eta):
@@ -232,7 +245,7 @@ class ModelKPZ(ModelBase):
         Int = self.Integral_pfixed(g, eta)
         self.Integral = Int.copy()
         ## Treat p=0 in I_nu:
-        self.Integral[1, 1:, :] /= self.p[1:, np.newaxis] ** 2
+        self.Integral[1, 1:, :] /= self.p[1:, None] ** 2
         self.Integral[1, 0, :] = self.Integral[1, 1, :]
 
     def Integral_upd_quad_extrapol(self, g, eta):
@@ -240,13 +253,13 @@ class ModelKPZ(ModelBase):
         Int = self.Integral_pfixed(g, eta)
         self.Integral = Int.copy()
         ## Treat p=0 in I_nu:
-        self.Integral[1, 1:, :] /= self.p[1:, np.newaxis] ** 2
+        self.Integral[1, 1:, :] /= self.p[1:, None] ** 2
         I1 = self.Integral[1, 1, :]
         I2 = self.Integral[1, 2, :]
-        p1_2 = self.p[1, np.newaxis] ** 2
-        p2_2 = self.p[2, np.newaxis] ** 2
+        p1_2 = self.p[1, None] ** 2
+        p2_2 = self.p[2, None] ** 2
         b = (I2 - I1) / (p2_2 - p1_2)
-        a = (I1+I2 - b*(p1_2+p2_2)) / 2
+        a = (I1 + I2 - b * (p1_2 + p2_2)) / 2
         self.Integral[1, 0, :] = a
 
     def calc_upd(self):

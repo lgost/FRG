@@ -383,8 +383,8 @@ def collapse(f, p, w, p_min, w_min, eta, z): #1D KPZ: eta=1/2, z=3/2; f=f[-1,:,:
     F =  f[np.logical_and(P_>p_min, W_>w_min)]
     P = P_[np.logical_and(P_>p_min, W_>w_min)]
     W = W_[np.logical_and(P_>p_min, W_>w_min)]
-    Y = W/P**(z)
-    F *= P**(eta)
+    Y = W / P ** z
+    F *= P ** eta
     return np.ndarray.flatten(Y), np.ndarray.flatten(F)
 
 #with p_max, w_max 
@@ -398,8 +398,8 @@ def collapse1(f, p, w, p_min, w_min, p_max, w_max, eta, z):
     # print(P_)
     # print(P)
     W = W_[arg]
-    Y = W/P**(z)
-    F *= P**(eta)
+    Y = W / P ** z
+    F *= P ** eta
     return np.ndarray.flatten(Y), np.ndarray.flatten(F)
 
 
@@ -460,7 +460,7 @@ def plot_f_and_collapse_r(f, self_p, self_w, p_min, w_min,
     
     arg = np.logical_and(self_p>p_min, self_p<p_max)
     pp = self_p[arg]
-    ax[0].plot(pp, np.exp(c) * pp**(z), color='red', linewidth=2, linestyle='dashed', label=r'$p^{z}$') #_r
+    ax[0].plot(pp, np.exp(c) * pp ** z, color='red', linewidth=2, linestyle='dashed', label=r'$p^{z}$') #_r
     
     # if self_p[0] != 0: plim = self_p[0]
     # else: plim = self_p[1]
@@ -488,11 +488,11 @@ def plot_C_and_collapse(C, self_p, self_w, p_min, w_min, eta_C, z, c, z1, c1, g_
 
     fig, ax = plt.subplots(1,2, figsize=(15, 5))
     ax[0].set_title(r'$log10 [ C(\omega, p) p^{4-eta ?} ]$', fontsize=16)
-    ax[0].pcolormesh(self_p, self_w, np.log10(C * P**(eta_C)), cmap=cmap)
+    ax[0].pcolormesh(self_p, self_w, np.log10(C * P ** eta_C), cmap=cmap)
 
-    ax[0].axhline(g_fixed**(z), color='r', label=r'$g_{fixed}^{z}$', linestyle='dashed')
-    ax[0].plot(self_p[self_p>g_fixed], np.exp(c) * self_p[self_p>g_fixed]**(z), color='black', linewidth=2, linestyle='dashed', label=r'$p^{z}$')
-    ax[0].plot(self_p[self_p>g_fixed], np.exp(c1) * self_p[self_p>g_fixed]**(z1), color='green', linewidth=2, linestyle='dashed', label=r'$p^{z1}$')
+    ax[0].axhline(g_fixed ** z, color='r', label=r'$g_{fixed}^{z}$', linestyle='dashed')
+    ax[0].plot(self_p[self_p>g_fixed], np.exp(c) * self_p[self_p>g_fixed] ** z, color='black', linewidth=2, linestyle='dashed', label=r'$p^{z}$')
+    ax[0].plot(self_p[self_p>g_fixed], np.exp(c1) * self_p[self_p>g_fixed] ** z1, color='green', linewidth=2, linestyle='dashed', label=r'$p^{z1}$')
     ax[0].axvline(g_fixed, color='r', label=r'$g_{fixed}$')
     ax[0].set_xlabel(r'$p$', fontsize = 15)
     ax[0].set_ylabel(r'$\omega$', fontsize = 15)
@@ -522,9 +522,9 @@ def plot_C_pure_and_collapse(C, self_p, self_w, p_min, w_min, eta_C, z, c, z1, c
     
     ax[0].contour(self_p, self_w, np.log10(C))
 
-    ax[0].axhline(g_fixed**(z), color='r', label=r'$g_{fixed}^{z}$', linestyle='dashed')
-    ax[0].plot(self_p[self_p>g_fixed], np.exp(c) * self_p[self_p>g_fixed]**(z), color='black', linewidth=2, linestyle='dashed', label=r'$p^{z}$')
-    ax[0].plot(self_p[self_p>g_fixed], np.exp(c1) * self_p[self_p>g_fixed]**(z1), color='green', linewidth=2, linestyle='dashed', label=r'$p^{z1}$')
+    ax[0].axhline(g_fixed ** z, color='r', label=r'$g_{fixed}^{z}$', linestyle='dashed')
+    ax[0].plot(self_p[self_p>g_fixed], np.exp(c) * self_p[self_p>g_fixed] ** z, color='black', linewidth=2, linestyle='dashed', label=r'$p^{z}$')
+    ax[0].plot(self_p[self_p>g_fixed], np.exp(c1) * self_p[self_p>g_fixed] ** z1, color='green', linewidth=2, linestyle='dashed', label=r'$p^{z1}$')
     ax[0].axvline(g_fixed, color='r', label=r'$g_{fixed}$')
     ax[0].set_xlabel(r'$p$', fontsize = 15)
     ax[0].set_ylabel(r'$\omega$', fontsize = 15)
@@ -580,7 +580,7 @@ def plot_C_pure_and_collapse_r(C, self_p, self_w, p_min, w_min,
     
     arg = np.logical_and(self_p>p_min, self_p<p_max)
     pp = self_p[arg]
-    ax[0].plot(pp, np.exp(c) * pp**(z), color='red', linewidth=2, linestyle='dashed', label=r'$p^{z}$') #_r
+    ax[0].plot(pp, np.exp(c) * pp ** z, color='red', linewidth=2, linestyle='dashed', label=r'$p^{z}$') #_r
 
     ax[0].set_xlabel(r'$p$', fontsize = 15)
     ax[0].set_ylabel(r'$\omega$', fontsize = 15)

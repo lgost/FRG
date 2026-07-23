@@ -121,7 +121,7 @@ def Integral_pfixed_dD_NLO_numba(
 
     wff2 = (w * f_lambdaq * f_lambdaQ) ** 2
     denom_a = 2 * lq * lQ * (fl ** 2 + wff2)
-    A3a = (fl) / denom_a
+    A3a = fl / denom_a
 
     denom_c = denom_a ** 2 * lq / lQ
     fl2 = fl + f_lambdaQ * lq

@@ -1,26 +1,29 @@
 import numpy as np
 from scipy.interpolate import RectBivariateSpline
 
-from flow_types import REAL
-from ..evolution import Evolution
+from ..flow_types import REAL
 from .evolution_two_base import EvolutionTwoBase
 
 
 class Evo2KPZ(EvolutionTwoBase):
+    """EvolutionTwo for the KPZ model: calculates and records the dimensionful
+    correlation function at the exit from the dimensionless grid, and, if
+    step_two_action is 'full', the integral for the rhs of the large-p equation.
+    """
 
     def update_IC_two(self):
-        '''Update dimensionful correlation function.'''
+        """Updates dimensionful correlation function."""
 
         self.update_f_IC_two()
 
         ip_two = self.js_exit
         ## Assuming that p_exit>=q_max => R(p_exit) is negligible:
         self.G20_IC_two[ip_two, :] = 2 * self.f_IC_two[0, :] / (
-            self.w_two2 + (self.p_two2[ip_two] * self.f_IC_two[1, :]) ** 2
+                self.w_two2 + (self.p_two2[ip_two] * self.f_IC_two[1, :]) ** 2
         )
 
-    def calc_I_dimful(self, ip_two:int, I_inner:REAL) -> np.ndarray:
-        """Calculates I_dimful (aka diffusion coefficient in the rhs
+    def calc_I_dimful(self, ip_two: int, I_inner: REAL) -> np.ndarray:
+        """Returns I_dimful (aka diffusion coefficient in the rhs
         of large-p equation) at the given ip_two."""
 
         ## NB deleted /2 to take forgotten *2 into account.
@@ -29,11 +32,11 @@ class Evo2KPZ(EvolutionTwoBase):
         return I_dimful
 
     def bispline(self, f):
-        """Bispline of f(p,w)."""
+        """Returns bispline of f(p,w)."""
         return RectBivariateSpline(self.evo.model.p, self.evo.model.w, f, kx=3, ky=3)
 
     def GaussLegendre_qto(self, gq, Fqto):  # om
-        """ Calculates integral of g*F over q, theta and omega;
+        """ Returns integral of g*F over q, theta and omega;
         gq depends on q, Fqto depends on q,theta,omega. """
 
         Fqt = np.einsum('qto,o->qt', Fqto, self.womega)
@@ -42,7 +45,7 @@ class Evo2KPZ(EvolutionTwoBase):
         return I
 
     def calc_I_inner(self) -> REAL:
-        """Dimensionless part of I_dimful, independent of p_two."""
+        """Returns dimensionless part of I_dimful, independent of p_two."""
 
         sin_d2 = self.sin_d2_qto
         q2 = self.q2_qto
@@ -66,7 +69,8 @@ class Evo2KPZ(EvolutionTwoBase):
         Fqto_plus = (dsR_D - 2 * q2 * kq * lq * dsR_nu / P) / P
 
         Fqto = sin_d2 * (Fqto_plus * 2)  ## ind is even in omega, ind = F_plus * 2
-        I_inner = self.evo.model.vdim1 / (2 * np.pi) * self.GaussLegendre_qto(gq, Fqto) / (2 * np.pi) ## the last 2pi is from omega-integration; (2pi)**dim is hidden in vdim1/2pi below, see Kloss2012
+        I_inner = self.evo.model.vdim1 / (2 * np.pi) * self.GaussLegendre_qto(gq, Fqto) / (
+                    2 * np.pi)  ## the last 2pi is from omega-integration; (2pi)**dim is hidden in vdim1/2pi below, see Kloss2012
 
         self.I_inner_file.write('%f\n' % I_inner)
 

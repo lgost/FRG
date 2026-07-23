@@ -1,19 +1,130 @@
 import numpy as np
-from typing import Any
 from abc import ABC, abstractmethod
 
-from .. import flow_dataclasses
 from ..flow_types import REAL
 from ..evolution import Evolution
 
-
 _NUM_POWERLAW = 5
 
+
 class EvolutionTwoBase(ABC):
+    """
+    Second (dimensionful) grid calculations: it runs on top of
+    the dimensionless RG evolution (passed as parameter "evo"
+    in initialization). Records the IC for the large-p equation
+    (ie dimensionful correlation function at the exit from the
+    dimensionless grid), and, if step_two_action is 'full', the
+    integral for the rhs of the large-p equation (ie the diffusion
+    coefficient) in evolution_two_action().  This method can be
+    overwritten to perform large-p equation integration inside
+    EvolutionTwo, but it is more effective to solve it elsewhere.
+    Model-dependent methods are abstract, to be implemented for
+    each model in child classes.
+    
+    Attributes
+    ----------
+    evo: Evolution
+        Dimensionless RG evolution.
+    path: str
+        Where to save the results.
+    p_min_two: REAL
+        Lower limit of the dimensionful momentum grid p_two.
+    p_max_two: REAL
+        Upper limit of the dimensionful momentum grid p_two.
+    Np_two: int
+        Number of points in dimensionful momentum grid p_two.
+    p_two: np.ndarray
+        Dimesionful momentum grid.
+    w_min_two: REAL
+        Lower limit of the dimensionful frequency grid w_two.
+    w_max_two: REAL
+        Upper limit of the dimensionful frequency grid w_two.
+    Nw_two: int
+        Number of points in dimensionful frequency grid w_two.
+    w_two: np.ndarray
+        Dimesionful frequency grid.
+    grid_two_shape: tuple
+        Shape of dimensionful grids (Np_two,Nw_two).
+    ip_exit: int
+        Index of p_two element that is closest to the p_exit given in the arguments.
+    p_exit: REAL
+        Value of p_two element that is closest to the p_exit given in the arguments.
+    kappa_exit: np.ndarray
+        Values of kappa (RG scale) when p_two points exit.
+    s_exit: np.ndarray
+        Values of s (RG time, s=ln(kappa)) when p_two points exit.
+    js_exit: int
+        Counter of position of the next exiting point in p_two. Starts from
+        s_exit.size-1 and counts down to 0 (when the last point exits, it becomes -1).
+    all_exited: bool
+        Initially False, is set to True when all points exit.
+    s_fin_all_exited: bool
+        If True, sets the final RG time of rg_evolution to the moment when all
+         points of p_two exit, ignoring s_fin argument in rg_evolution.
+    G20_IC_two: np.ndarray
+        Array of shape grid_two_shape, representing values of the initial condition for the
+        dimensionful two-point correlation function on (p_two, w_two) grid, which values
+        at p_two[i] and all w_two is recorded when p_two[i] exits.
+    f_IC_two: np.ndarray
+        Array of shape (evo.model.nef,grid_two_shape), representing values of the
+        dimensionful flowing functions on (p_two, w_two) grid, which values
+        at p_two[i] and all w_two is recorded when p_two[i] exits; used to
+        construct G20_IC_two.
+    X_dimful: np.ndarray
+        Array of size evo.model.n_f of flowing dimensionful parameters; eg, for KPZ,
+        [D_kappa, nu_kappa].
+    p_two2: np.ndarray
+        p_two**2
+    w_two2: np.ndarray
+        w_two**2
+    exit_par_file
+        file to record exit parameters js_exit, evo.s, X_dimful.
+    """
+
     def __init__(self,
                  evo: Evolution,
                  **params_two
                  ):
+        """
+
+        Parameters
+        ----------
+        evo: Evolution
+            One-grid evolution.
+        params_two: dict
+            Contains parameters required for the second-grid evolution:
+            Np_two: int
+                number of points in dimensionful momentum grid p_two.
+            p_min_two: REAL
+                lower limit of the dimensionful momentum grid p_two.
+            p_max_two: REAL
+                upper limit lower limit of the dimensionful momentum grid p_two.
+            match_w_to_p_two: bool, default False
+                if True, create dimensionful frequency grid w_two as w_two = p_two**2,
+                ignoring Nw_two, w_min_two, w_max_two.
+            Nw_two: int
+                number of points in dimensionful frequency grid w_two.
+            w_min_two: REAL
+                lower limit of the dimensionful frequency grid w_two.
+            w_max_two: REAL
+                upper limit of the dimensionful frequency grid w_two.
+            p_exit: REAL
+                Defines exitcriterion: if p_two[i]>=p_exit then the i-th point exits the
+                dimensionless grid evolution.
+            X_dimful_in: np.ndarray
+                Initial conditions for dimensionful variables at kappa=Lambda
+                of size evo.model.n_f; for example, for KPZ, np.array([D_in, nu_in]).
+            scale: str, default 'log'
+                scale of dimensionful grids p_two, w_two; accepts 'lin', 'log'.
+            s_fin_all_exited: bool, default False
+                if True, sets the final RG time of rg_evolution to the moment when all
+                points of p_two exit, ignoring s_fin argument in rg_evolution.
+            step_two_action: str
+                Accepts 'only_record_IC' (default) - records initial condition
+                for large-p equation, or 'full' - adds an action on top of that
+                (records the diffusion coefficient for the rhs of large-p equation).
+        """
+
         self.evo = evo
         self.path = self.evo.path
 
@@ -58,7 +169,7 @@ class EvolutionTwoBase(ABC):
             self.step_two = self.step_two_full
             deg_omega = params_two.get('deg_omega')
             omega_max = params_two.get('omega_max')
-            self._init_evo2_calc(deg_omega,omega_max)
+            self._init_evo2_calc(deg_omega, omega_max)
         else:
             raise ValueError("step_two_action must be either 'only_record_IC' or 'full'.")
 
@@ -66,7 +177,7 @@ class EvolutionTwoBase(ABC):
         self._init_save(self.path)
 
         # Print the init parameters
-        self.print_class_vars()
+        self.print_class_attributes()
 
     ##########################################################################
     # Methods : init
@@ -105,18 +216,13 @@ class EvolutionTwoBase(ABC):
         self.ip_exit = np.argmin(abs(p_exit - self.evo.model.p))
         self.p_exit = self.evo.model.p[self.ip_exit]
         self.kappa_exit = self.p_two / self.p_exit
-        self.s_exit = np.log(self.kappa_exit)  # s<0
-
-        # s_exit_file = open(self.path + '/s_exit.dat', 'w+')
-        # np.savetxt(s_exit_file, self.s_exit, delimiter=' ', newline=' ')
-        # s_exit_file.close()
-
+        self.s_exit = np.log(self.kappa_exit)  ## s<0
         self.js_exit = self.s_exit.size - 1
         self.all_exited = False
         self.s_fin_all_exited = s_fin_all_exited
 
     def _init_arrays(self, grid_two_shape):
-        ## To record the corr function G^(2,0) and f's at the exit from the 1st grid
+        ## Array to record the corr function G^(2,0) and f's at the exit from the 1st grid
         self.G20_IC_two = np.zeros(grid_two_shape)
 
     def _init_X_dimful(self, X_dimful_in):
@@ -128,7 +234,7 @@ class EvolutionTwoBase(ABC):
         self.w_two2 = self.w_two ** 2
 
         ## Dimensionful f's of w (at p=p-exit) at the exit from the 1st grid
-        self.f_IC_two = np.zeros((self.evo.model.n_f, self.Nw_two)) ##
+        self.f_IC_two = np.zeros((self.evo.model.n_f, self.Nw_two))  ##
 
     def _init_save(self, path):
         self.exit_par_file = open(path + '/exit_parameters.bin', 'wb+')
@@ -136,7 +242,7 @@ class EvolutionTwoBase(ABC):
             self.I_dimful_file = open(path + '/I_dimful.bin', 'wb+')
             self.I_inner_file = open(path + '/I_inner.dat', 'w+')
 
-    def _init_evo2_calc(self, deg_omega,omega_max):
+    def _init_evo2_calc(self, deg_omega, omega_max):
 
         ## Internal omega-grid (only half-space omega>0)
         self.omega_max = omega_max
@@ -148,7 +254,7 @@ class EvolutionTwoBase(ABC):
             raise ValueError("w_max < omega_max")
 
         ## Broadcast to (q,theta,omega):
-        self.omega_qto = self.omega[None,None,:]
+        self.omega_qto = self.omega[None, None, :]
         self.q_qto = self.evo.model.q[:, None, None]
         self.q2_qto = self.evo.model.q2[:, None, None]
         self.rq_qto = self.evo.model.r(self.q_qto)
@@ -156,15 +262,14 @@ class EvolutionTwoBase(ABC):
         if self.evo.dim == 1:
             self.sin_d2_qto = 1
         else:
-            self.sin_d2_qto = np.sin(self.evo.model.theta)**(self.evo.dim-2)
-            self.sin_d2_qto = self.sin_d2_qto[None,:,None]
-
+            self.sin_d2_qto = np.sin(self.evo.model.theta) ** (self.evo.dim - 2)
+            self.sin_d2_qto = self.sin_d2_qto[None, :, None]
 
     ##########################################################################
     # Methods : print, save
     ##########################################################################
 
-    def print_class_vars(self):
+    def print_class_attributes(self):
         # for k,v in params_two.items():
         #     print(k, ":", v)
         # print('X_dimful =', self.X_dimful)
@@ -174,7 +279,7 @@ class EvolutionTwoBase(ABC):
         # print('s_exit: ', self.s_exit)
         # print('kappa_exit: ', self.kappa_exit)
         # print('js_exit: ', self.js_exit)
-        print("=== EvolutionTwo has the following parameters: ===")
+        print("=== EvolutionTwo has the following attributes: ===")
         for key, value in vars(self).items():
             if isinstance(value, np.ndarray):
                 if value.size > 3:
@@ -186,7 +291,8 @@ class EvolutionTwoBase(ABC):
                 print(f"{key}={value}")
         print("==================================================")
 
-    def print_heading(self):
+    @staticmethod
+    def print_heading():
         print("s \t\t|\t\t eta's \t\t|\t  g \t|\t -I's[0,0] \t\t||\t js_exit \t|\t X_dimful")
 
     def print_line(self):
@@ -223,26 +329,20 @@ class EvolutionTwoBase(ABC):
     ##########################################################################
     # Methods : calc
     ##########################################################################
-    # def power_law_w_avg_loggrid(f, ip, num):  # pow
-    #     f_m = f[ip, -num:]
-    #     f_m_ = np.gradient(f[ip, -num:], self.evo.w[-num:])
-    #     b = self.evo.w[-num:] * f_m_ / f_m
-    #     b_avg = np.average(b)
-    #     return b_avg
 
     def powerlaw_w_calc(self):
-        '''Calculates slope of functions f(w) at p=p_exit for
+        """Calculates slope of functions f(w) at p=p_exit for
         continuation to w>w_max.
         Works for equally(!)-spaced log-grid:
         np.log(self_p[j+1]) - np.log(self_p[j]) = const
-        '''
+        """
 
         num = _NUM_POWERLAW
-        f_m = self.evo.f[:,self.ip_exit, -num:] ##shape=(n_f, num)
+        f_m = self.evo.f[:, self.ip_exit, -num:]  ##shape=(n_f, num)
         f_m_ = np.gradient(f_m, self.evo.model.w[-num:], axis=1)
         b = self.evo.model.w[-num:] * f_m_ / f_m
         b_avg = np.average(b, axis=1)
-        return b_avg ##shape=(n_f,)
+        return b_avg  ##shape=(n_f,)
 
     def update_f_IC_two(self):
         kappa = np.exp(self.evo.s)  ## *Lambda, Lambda = 1 in the code
@@ -270,14 +370,14 @@ class EvolutionTwoBase(ABC):
                 self.f_IC_two[i, where_big] = self.X_dimful[i] * f_exit_cont
 
     def dimful_update(self):
-        '''Update dimensionful parameters X.'''
+        """Update dimensionful parameters X."""
 
         ## -ds*(-eta) = + ds*eta
         self.X_dimful += self.evo.ds * self.evo.eta * self.X_dimful
 
     @abstractmethod
     def update_IC_two(self):
-        '''Update dimensionful correlation function. Model-dependent.'''
+        """Update dimensionful correlation function. Model-dependent."""
 
         pass
 
@@ -286,6 +386,10 @@ class EvolutionTwoBase(ABC):
     ##########################################################################
 
     def step_two_record_IC(self):
+        """ A simple timestep of the dimensionful second grid RG evolution: updates the dimensionful
+        flowing variables, performs an exit of the next p_two point if it is time to,
+        and records the initial condition for the large-p equation.
+        """
         self.dimful_update()
         if not self.all_exited:
             if self.evo.s <= self.s_exit[self.js_exit]:
@@ -298,17 +402,21 @@ class EvolutionTwoBase(ABC):
                     print('All exited.')
 
     def step_two_full(self):
+        """
+        A full timestep of the dimensionful second grid RG evolution:
+        does evolution_two_action() on top of step_two_record_IC().
+        """
         self.step_two_record_IC()
         self.evolution_two_action()
 
-    def evolution_two_action(self):  #RG_evolution_two(Kappa, all_exited):
+    def evolution_two_action(self):  # RG_evolution_two(Kappa, all_exited):
         """Calculates and saves I_dimful (aka diffusion coefficient),
         which is used in the rhs of large-p equation in another algorithm.
         It is of the form [0,0,...,(i=js_exit + 1)value,...,(i=Np_two-1)value].
         """
 
         I_inner = self.calc_I_inner()
-        if (self.js_exit + 1 < self.Np_two):  ## <=> if at least one IC was recorded.
+        if self.js_exit + 1 < self.Np_two:  ## <=> if at least one IC was recorded.
             I_dimful = np.zeros(self.Np_two)
             for ip_two in range(self.js_exit + 1, self.Np_two):
                 I_dimful[ip_two] = self.calc_I_dimful(ip_two, I_inner)
@@ -322,7 +430,7 @@ class EvolutionTwoBase(ABC):
         pass
 
     @abstractmethod
-    def calc_I_dimful(self, ip_two:int, I_inner:REAL) -> np.ndarray:
+    def calc_I_dimful(self, ip_two: int, I_inner: REAL) -> np.ndarray:
         """Calculates I_dimful (aka diffusion coefficient in the rhs
         of large-p equation) at the given ip_two."""
         pass
@@ -369,5 +477,3 @@ class EvolutionTwoBase(ABC):
         self.evo.close_files()
         self.close_files()
         print('FINISH Saved in', self.path)
-
-#todo auto doc at the end

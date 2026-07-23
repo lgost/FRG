@@ -1,19 +1,67 @@
 import sys
-
 import os
+
 from .models.model_base import ModelBase
 from .flow_types import *
 from . import flow_dataclasses
 
 
 class Evolution:
+    """
+    Class to integrate dimensionless flow equations. It owns the current state of
+    the flowing variables (functions, coupling, exponents) ans RG time,
+    while the calculation of the rhs of flow equations os encapsulated in Model.
+    
+    Attributes
+    ----------
+    model: ModelBase
+        Model for which RG flow is integrated.
+    dim: int
+        Space dimension, set same as model's
+    ds: REAL
+        Timestep in RG time s=log(kappa) for flow is integration algorithm.
+    s: REAL
+        Current RG time s=log(kappa).
+    f: np.ndarray
+        Array of flowing functions values on (model.p,model.w) dimensionless grid
+        at current RG time; shape=(model.n_f, model.external_grid_shape).
+    g: REAL
+        Value of flowing dimesionless coupling at current RG time.
+    eta: np.ndarray
+        Array of size model.n_f of flowing exponents at current RG time; eg,
+        for KPZ, [eta_D, eta_nu].
+    path: str
+        Where to save the results.
+    f_file:
+        file to save the flowing functions.
+    par_file:
+        file to save the flowing parameters.
+    """
+
     def __init__(
-        self,
-        model: ModelBase,
-        IC: flow_dataclasses.IC_NLO,
-        ds:REAL,
-        path_save: str
+            self,
+            model: ModelBase,
+            IC: flow_dataclasses.IC_NLO,
+            ds: REAL,
+            path_save: str
     ) -> None:
+        """
+
+        Parameters
+        ----------
+        model: ModelBase
+            Model for which RG flow is integrated.
+        IC: flow_dataclasses.IC_NLO
+            Initial condition for the RG equations (at kappa=Lambda):
+            g_in is a scalar, etas_in is np.ndarray of size model.n_f
+            (eg, for KPZ, [eta_D, eta_nu]), fs_in is np.ndarray of
+            shape (model.n_f, model.Np, model.Nw) for dimensionless
+            flowing functions (eg, for KPZ, f_D, f_nu).
+        ds: REAL
+            Timestep in RG time s=log(kappa) for flow is integration algorithm.
+        path_save: str
+            Where to save the results.
+        """
         self.model = model
         self.dim = model.dim
 
@@ -28,7 +76,7 @@ class Evolution:
         self._init_save(path_save)
 
         # Print the init parameters
-        self.print_class_vars()
+        self.print_class_attributes()
 
     ##########################################################################
     # Methods : init
@@ -50,11 +98,11 @@ class Evolution:
             if choice == "y":
                 pass
             else:
-                sys.exit(-1)
+                sys.exit("Pressed key to exit.")
         else:
             os.mkdir(self.path)
 
-        #Binary data.tofile is faster and lighter than np.savetxt
+        # Binary data.tofile is faster and lighter than np.savetxt
         self.f_file = open(self.path + '/f.bin', 'wb+')
         self.par_file = open(self.path + '/flow_parameters.bin', 'wb+')
 
@@ -64,22 +112,23 @@ class Evolution:
         f_sh = (self.model.n_f, *self.model.external_grid_shape)
         eta_sh = (self.model.n_f,)
 
-        check_f = ( self.f.shape ==  f_sh)
-        check_eta = ( self.eta.shape == eta_sh )
+        check_f = (self.f.shape == f_sh)
+        check_eta = (self.eta.shape == eta_sh)
 
-        if  check_f and check_eta:
+        if check_f and check_eta:
             print('Shapes are consistent')
         else:
             print('Shapes are not consistent: check_f =', check_f, 'check_eta', check_eta)
-            print(self.f.shape, f_sh )
-            print(self.eta.shape, eta_sh )
-            sys.exit('Shapes  are not consistent')
+            print(self.f.shape, f_sh)
+            print(self.eta.shape, eta_sh)
+            raise Exception('Shapes  are not consistent')
 
     ##########################################################################
     # Methods : print, save
     ##########################################################################
 
-    def print_heading(self):
+    @staticmethod
+    def print_heading():
         print("s \t\t|\t\t eta's \t\t|\t  g \t|\t -I's[0,0]")
 
     def print_line(self):
@@ -92,21 +141,25 @@ class Evolution:
             '\t{:.3f}'.format(self.g) +
             " | " +
             "".join(f"\t{x:.5f}" for x in -self.model.Integral[:, 0, 0])
-    )
+        )
 
     def write_files_params(self):
+        """Writes  to file parameters values at the current moment
+        as a single line."""
         param = np.concatenate([[self.s], self.eta, [self.g]])
         param.tofile(self.par_file)
 
     def write_files_f(self):
+        """Writes to file dimensionless flowing functions values at the
+        current moment."""
         self.f.tofile(self.f_file)
 
     def close_files(self):
         self.par_file.close()
         self.f_file.close()
 
-    def print_class_vars(self):
-        print("=== Evolution has the following parameters: ===")
+    def print_class_attributes(self):
+        print("=== Evolution has the following attributes: ===")
         for key, value in vars(self).items():
             # if key in ('model', 'ds', 'g', 'eta', 'path',
             #            'n_f', 'approximation', 'dim', 'version_Ak',
@@ -130,8 +183,6 @@ class Evolution:
     # Methods : calc
     ##########################################################################
 
-
-
     ##########################################################################
     # Methods : RG evolution
     ##########################################################################
@@ -150,7 +201,7 @@ class Evolution:
 
         Parameters
         ----------
-        s_fin : float
+        s_fin : REAL
             negative final RG time, until which we integrate the flow (e.g., -20).
         n_print : int
             each n_print steps print the flow parameters.

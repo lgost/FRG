@@ -2,48 +2,47 @@ from .flow_types import REAL
 from .flow_dataclasses import *
 
 from .evolution import *
-from .models import ModelBase, ModelToy, ModelKPZ
+from .models import ModelBase, ModelKPZ
 
-from .evolution_two import EvolutionTwoBase, Evo2Toy, Evo2KPZ
+from .evolution_two import EvolutionTwoBase, Evo2KPZ
 
-
-
-MODELS : dict[str, type[ModelBase]] = {
-    "Toy": ModelToy,
+MODELS: dict[str, type[ModelBase]] = {
     "KPZ": ModelKPZ,
 }
 
 EVO_TWO: dict[str, type[EvolutionTwoBase]] = {
-    "Toy": Evo2Toy,
     "KPZ": Evo2KPZ,
 }
 
 
 def create(
-        model_name:str,
+        model_name: str,
         model_params,
-        evolution_name:str,
+        evolution_name: str,
         evolution_params,
-        evolution_two_params = None
+        evolution_two_params=None
 ) -> Evolution | EvolutionTwoBase:
     """
     Sets up a given evolution (evolution_name) for a
     given model (model_name).
     Parameters
     ----------
-    model_name:str
+    model_name: str
         Physical model. Accepts "Toy", "KPZ", "KS", "NS_thermal"
-    evolution_name:str
-        One grid or two grids scheme. Accepts "evo1", "evo2"
-    ds:REAL
-        Step in RG time.
-    path_save:str
-        Relative path to save the output.
+    model_params: tuple
+        Contains parameters accepted by the Model.
+    evolution_name: str
+        One grid or two grids scheme. Accepts "evo1", "evo2".
+    evolution_params: tuple
+        Contains parameters accepted by the Evolution.
+    evolution_two_params: dict
+        Contains parameters for EvolutionTwo. Needed if evolution_name is "evo2".
 
     Returns
     -------
-    Evolution or Evolution2 class instance
+    Evolution or Evolution2 class instance.
     """
+
     if model_name not in MODELS:
         raise ValueError(f"Model {model_name} not supported")
     if evolution_name not in ["evo1", "evo2"]:
@@ -51,14 +50,13 @@ def create(
 
     model_class = MODELS[model_name]
     model = model_class(*model_params)
-    evo = Evolution(model, *evolution_params)#IC, ds, path_save)
+    evo = Evolution(model, *evolution_params)  # IC, ds, path_save)
 
     if evolution_name == 'evo1':
         return evo
     elif evolution_name == 'evo2':
         evo2_class = EVO_TWO[model_name]
-        evo2 = evo2_class(evo,**evolution_two_params)
+        evo2 = evo2_class(evo, **evolution_two_params)
         return evo2
     else:
         raise ValueError(f"Evolution {evolution_name} not supported")
-    

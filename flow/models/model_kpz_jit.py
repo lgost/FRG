@@ -14,8 +14,8 @@ class ModelKPZ(ModelBase):
                  n_f: int,
                  approximation: str,
                  dim: int,
-                 params_grid_external: flow_dataclasses.Params_grid_external,
-                 params_grid_internal: flow_dataclasses.Params_grid_internal,
+                 params_grid_external: flow_dataclasses.ParamsGridExternal,
+                 params_grid_internal: flow_dataclasses.ParamsGridInternal,
                  r, r_, coeff_nu: REAL
                  ):
 
