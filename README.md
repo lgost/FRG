@@ -1,6 +1,6 @@
 # FRG
 
-Package for Functional Renormalisation Group calculations within the next-to-leading order (NLO) approximation. 
+Package for Functional Renormalisation Group calculations within the next-to-leading order (NLO) approximation and the *two grids* scheme. 
 
 ## About the FRG
 
@@ -14,22 +14,44 @@ On top of that, we reinforce this method with the *two grids* scheme [2], which 
 
 ## Files
 
-Branch 'main' contains the implementation of the FRG equations solution for the Kardar-Parisi-Zhang model in arbitrary dimension.
+<pre>
+📂 FRG
+├── 📁 flow
+├── 📁 models
+│   ├── 📄 model_base.py   ← Base class for Model classes, that define a physical model and the approximation for the FRG equation. It contains methods for calculation of rhs of flow equations (which define the model, they are abstract, to be implemented in child classes), as well as computational details: regulators, grids, etc.
+│   ├── 📄 model_kpz.py   ← Implementation for the KPZ equation.
+│   ├── ...
+│   └── 📄 model_ADD_YOUR_MODEL.py  
+├── 📁 evolution_two
+│   ├── 📄 evolution_two_base.py   ← Base class for the dimensionful evolution. Records the IC (the correlation function) for the large-p equation.
+│   ├── 📄 evo2_kpz.py   ← Implementation for the KPZ equation.
+│   ├── ...
+│   └── 📄 evo2_ADD_YOUR_MODEL.py  
+├── 📄 create.py   ← The "factory". Sets up a given evolution for a given model. 
+├── 📄 evolution.py   ← Class to integrate dimensionless flow equations. It owns the current state of the flowing variables.
+├── 📄 regulator.py   ← Collection of regulators to plug into the flow.
+├── ...
+└── 📁 usage_examples
+    ├── 📄 KPZ_1D_twogrids.ipynb   ← KPZ equation in 1D with in the NLO approximation and recording of the dimensionful corr function with initial condition g_in=1. Result: KPZ scaling in IR and EW scaling in UV.
+    └── 📄 KPZ_1D_twogrids_g300.ipynb   ← Same for g_in=300 (low viscosity). Result: KPZ scaling in IR and inviscid scaling in UV.
+</pre>
 
-- `flow_NLO.py`: the class FlowNLO for FRG equations solution 
+The *two grids* scheme integrates the small-momentum flow equation (NLO or LO) on a dimensionless grid. The result is recorded at a certain RG time (a certain scale) and used as an initial condition for the large-momentum flow equations that are integrated on a dimensionful grid.
+
+- Dimensionless flow `evolution.py`
     - the parameter `approximation` can be set to "NLO" or "LO";
     - the flowing functions are discretized on a log grids of frequency and momentum;
-    - the evolution of the flowing coupling, anomalous dimension and functions is saved to corresponding files.
-- `regulator.py`: collection of regulators and their derivatives that you can plug into the flow
-- `my_plot_NLO.py`: some frequently-used plotting routines to visualize the FRG results
+    - the evolution of the flowing coupling, anomalous dimension and flowing functions is saved to corresponding files.
 
-Usage examples:
-- `NLO_...ipynb`:  an example of the flow within the NLO approximation for the KPZ equation in 2D.
-- `LO_...ipynb`:  an example of the flow within the LO approximation and same model.
+- Dimensionful flow `evolution_two_base.py`
+    - can be added on top of the dimensionless flow in the factory `create.py`;
+    - records the IC for the large-p equation; the integration of the large-p equation is performed elsewhere.
 
 ## Upcoming
 
-dev: making a package for FRG calculations that will be easily-expandable to different models.
+dev:
+
+todo's: add Navier-Stokes model; add Crank–Nicolson algorithm to integrate the dimensionful flow.
 
 ---------
 

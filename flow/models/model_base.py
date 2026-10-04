@@ -10,7 +10,7 @@ class ModelBase(ABC):
     """
     Base class for Model classes, that define a physical model and the
     approximation for the FRG equation. It contains methods for calculation
-    of rhs of flow equations (which define the model, they are anstract, to
+    of rhs of flow equations (which define the model, they are abstract, to
     be implemented in child classes),
     as well as computational details: regulators, grids, and auxiliary
     attributes frequently used in calculations (not fully listed in Attributes below).

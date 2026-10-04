@@ -9,7 +9,7 @@ from . import flow_dataclasses
 class Evolution:
     """
     Class to integrate dimensionless flow equations. It owns the current state of
-    the flowing variables (functions, coupling, exponents) ans RG time,
+    the flowing variables (functions, coupling, exponents) and RG time,
     while the calculation of the rhs of flow equations os encapsulated in Model.
     
     Attributes
